@@ -1,0 +1,14 @@
+còn 9670 từ, 194 lô
+lô lỗi: HTTP 404 {
+  "error": {
+    "code": 404,
+    "message": "This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest 
+lô lỗi: HTTP 404 {
+  "error": {
+    "code": 404,
+    "message": "This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest 
+lô lỗi: HTTP 404 {
+  "error": {
+    "code": 404,
+    "message": "This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest 
+tiến độ: lô 5/194, xong 0, lỗi 120

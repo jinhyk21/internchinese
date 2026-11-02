@@ -1,0 +1,11 @@
+{
+  "name": "InternChinese · 实习汉语",
+  "short_name": "InternChinese",
+  "description": "Luyện giao tiếp tiếng Trung nơi công sở",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7efdc",
+  "theme_color": "#b3202a",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
