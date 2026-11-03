@@ -8,15 +8,40 @@ export const examCount = (track) => (track === 'HSK 7-9' ? 300 : 100)      // HS
 export const examSize = (track) => (isIndustry(track) ? 20 : 30)
 export const PASS = 60
 
+// 4 kỹ năng, theo thứ tự trong đề: Nghe → Nói → Đọc → Viết
+export const SKILLS = [
+  { key: 'listen', zh: '听', vi: 'Nghe' },
+  { key: 'speak', zh: '说', vi: 'Nói' },
+  { key: 'read', zh: '读', vi: 'Đọc' },
+  { key: 'write', zh: '写', vi: 'Viết' },
+]
+export const SPEAK_PASS = 60            // điểm phát âm tối thiểu để tính câu Nói là đúng
+
 const TYPE_LABEL = {
-  zh2vi: '汉 → Việt · Chọn nghĩa đúng',
-  vi2zh: 'Việt → 汉 · Chọn chữ Hán đúng',
-  zh2py: '汉 → pinyin · Chọn phiên âm đúng',
-  py2zh: 'pinyin → 汉 · Chọn chữ Hán đúng',
-  listen: '听力 · Nghe và chọn chữ Hán',
-  cloze: '填空 · Điền từ vào chỗ trống',
+  listen: '听 Nghe · Nghe và chọn chữ Hán',
+  listen2vi: '听 Nghe · Nghe và chọn nghĩa tiếng Việt',
+  speak: '说 Nói · Đọc to từ sau (chấm phát âm)',
+  zh2vi: '读 Đọc · Chọn nghĩa đúng',
+  vi2zh: '读 Đọc · Chọn chữ Hán đúng',
+  zh2py: '读 Đọc · Chọn phiên âm đúng',
+  py2zh: '读 Đọc · Chọn chữ Hán đúng từ pinyin',
+  cloze: '读 Đọc · Điền từ vào chỗ trống',
+  write: '写 Viết · Viết chữ Hán theo nghĩa và pinyin',
 }
 export const typeLabel = (t) => TYPE_LABEL[t]
+const SKILL_OF = { listen: 'listen', listen2vi: 'listen', speak: 'speak', write: 'write' }
+export const skillOf = (q) => SKILL_OF[q.type] || 'read'
+
+const strip = (v) => String(v || '').replace(/\s+/g, '')
+// Câu trả lời có đúng không: Nói → điểm phát âm đạt · Viết → khớp chữ Hán · còn lại → khớp đáp án
+export function isRight(q, a) {
+  if (a == null) return false
+  if (q.type === 'speak') return a.score >= SPEAK_PASS
+  if (q.type === 'write') return strip(a) === strip(q.answer)
+  return a === q.answer
+}
+// Câu đã có trả lời hay chưa (để tô màu danh sách câu)
+export const hasAnswer = (q, a) => (q.type === 'speak' ? a != null : !!a)
 
 function seedOf(str) {
   let h = 1779033703 ^ str.length
@@ -57,7 +82,16 @@ export function buildExam(pool, track, no) {
   const rnd = rng(`${track}#${no}`)
   const size = Math.min(examSize(track), pool.length)
   const words = shuffle(pool, rnd).slice(0, size)
-  const types = ['zh2vi', 'vi2zh', 'zh2py', 'py2zh', 'listen', 'cloze']
+
+  // chia số câu theo kỹ năng: Nghe 25% · Nói 15% · Viết 20% · Đọc phần còn lại
+  const nListen = Math.round(size * .25), nSpeak = Math.round(size * .15), nWrite = Math.round(size * .2)
+  const nRead = size - nListen - nSpeak - nWrite
+  // câu Nói / Viết ưu tiên từ ngắn (≤ 4 chữ) để dễ đọc và dễ viết
+  const short = words.filter(w => w.chinese.length <= 4), long = words.filter(w => w.chinese.length > 4)
+  const used = new Set(), take = (n, list) => { const o = []; for (const w of list) { if (o.length < n && !used.has(w)) { used.add(w); o.push(w) } } return o }
+  const wSpeak = take(nSpeak, short), wWrite = take(nWrite, short)
+  const wListen = take(nListen, [...long, ...short]), wRead = take(nRead, [...long, ...short])
+  for (const w of words) if (!used.has(w)) { used.add(w); (wRead.length < nRead ? wRead : wListen).push(w) }
 
   const options = (key, w) => {
     const ans = w[key], out = new Set([ans])
@@ -69,20 +103,27 @@ export function buildExam(pool, track, no) {
     return shuffle([...out], rnd)
   }
 
-  return words.map((w, i) => {
-    let type = types[Math.floor(rnd() * types.length)]
-    const clozeOk = w.example_chinese && w.example_chinese.includes(w.chinese)
-    if (type === 'cloze' && !clozeOk) type = 'zh2vi'
-    const base = { id: i, type, word: w }
+  const out = []
+  const push = (q) => out.push({ id: out.length, ...q })
+  wListen.forEach((w, i) => i % 2
+    ? push({ type: 'listen2vi', word: w, speak: w.chinese, answer: w.vietnamese, options: options('vietnamese', w) })
+    : push({ type: 'listen', word: w, speak: w.chinese, answer: w.chinese, options: options('chinese', w) }))
+  wSpeak.forEach(w => push({ type: 'speak', word: w, prompt: w.chinese, sub: w.pinyin, hint: w.vietnamese, answer: w.chinese }))
+  const readTypes = ['zh2vi', 'vi2zh', 'zh2py', 'py2zh', 'cloze']
+  wRead.forEach(w => {
+    let type = readTypes[Math.floor(rnd() * readTypes.length)]
+    if (type === 'cloze' && !(w.example_chinese && w.example_chinese.includes(w.chinese))) type = 'zh2vi'
+    const base = { type, word: w }
     switch (type) {
-      case 'zh2vi': return { ...base, prompt: w.chinese, sub: w.pinyin, answer: w.vietnamese, options: options('vietnamese', w) }
-      case 'vi2zh': return { ...base, prompt: w.vietnamese, answer: w.chinese, options: options('chinese', w) }
-      case 'zh2py': return { ...base, prompt: w.chinese, answer: w.pinyin, options: options('pinyin', w) }
-      case 'py2zh': return { ...base, prompt: w.pinyin, answer: w.chinese, options: options('chinese', w) }
-      case 'listen': return { ...base, speak: w.chinese, answer: w.chinese, options: options('chinese', w) }
-      default: return { ...base, prompt: w.example_chinese.replace(w.chinese, '＿＿'), answer: w.chinese, options: options('chinese', w) }
+      case 'zh2vi': return push({ ...base, prompt: w.chinese, sub: w.pinyin, answer: w.vietnamese, options: options('vietnamese', w) })
+      case 'vi2zh': return push({ ...base, prompt: w.vietnamese, answer: w.chinese, options: options('chinese', w) })
+      case 'zh2py': return push({ ...base, prompt: w.chinese, answer: w.pinyin, options: options('pinyin', w) })
+      case 'py2zh': return push({ ...base, prompt: w.pinyin, answer: w.chinese, options: options('chinese', w) })
+      default: return push({ ...base, prompt: w.example_chinese.replace(w.chinese, '＿＿'), answer: w.chinese, options: options('chinese', w) })
     }
   })
+  wWrite.forEach(w => push({ type: 'write', word: w, prompt: w.vietnamese, sub: w.pinyin, answer: w.chinese }))
+  return out
 }
 
 // ---- Kết quả: lưu bảng exam_results (db/07_exams.sql); chưa có bảng thì tạm lưu trong trình duyệt ----
@@ -107,4 +148,12 @@ export async function loadResults(userId, track) {
     m.best = Math.max(m.best, x.score); m.count++
   }
   return map
+}
+
+// Toàn bộ kết quả thi của một người (mọi track, cả bản lưu tạm trong trình duyệt) → { count, avg, best }
+export async function examSummary(userId) {
+  const { data } = await supabase.from('exam_results').select('score').eq('user_id', userId).limit(1000)
+  const rows = [...(data || []), ...local().filter(x => x.user_id === userId)]
+  if (!rows.length) return { count: 0, avg: null, best: null }
+  return { count: rows.length, avg: Math.round(rows.reduce((t, x) => t + Number(x.score), 0) / rows.length), best: Math.max(...rows.map(x => Number(x.score))) }
 }

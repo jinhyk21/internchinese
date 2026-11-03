@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { transcribeAudio } from '../ai.js'
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
 const MAX_SEC = 90
 const BARS = 36
 
 // Popup ghi âm: thanh sóng âm theo mic, đếm giờ, chữ nhận diện hiện trực tiếp, bấm "Dừng & gửi" khi nói xong.
-export default function VoiceRecorder({ onSend, onClose }) {
+// strict: dùng để chấm phát âm — không cho gõ tay thay lời nói; không nhận diện được thì gửi chuỗi rỗng.
+export default function VoiceRecorder({ onSend, onClose, strict = false, title }) {
   const [phase, setPhase] = useState('starting')   // starting | rec | review | error
   const [sec, setSec] = useState(0)
   const [text, setText] = useState('')
   const [msg, setMsg] = useState('')
   const [blob, setBlob] = useState(null)
+  const [busy, setBusy] = useState(false)
   const canvas = useRef(null)
   const R = useRef({ base: '', live: '', active: false })
 
@@ -71,7 +74,12 @@ export default function VoiceRecorder({ onSend, onClose }) {
             setText(r.base + r.live)
           }
           sr.onend = () => { if (r.active) { r.base += r.sessFinal || r.live || ''; r.live = ''; r.sessFinal = ''; try { run() } catch { /* bỏ qua */ } } }
-          sr.onerror = (e) => { if (e.error === 'not-allowed') setMsg('Trình duyệt chặn nhận diện giọng nói.') }
+          sr.onerror = (e) => {
+            if (['not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported', 'network'].includes(e.error)) {
+              r.active = false   // lỗi không tự hết → không thử lại mãi
+              setMsg('Trình duyệt không nhận diện được chữ (' + e.error + '). Cứ nói tiếp — khi bấm “Dừng & gửi” hệ thống sẽ nhận diện từ bản ghi âm.')
+            }
+          }
           sr.start()
         }
         run()
@@ -80,8 +88,14 @@ export default function VoiceRecorder({ onSend, onClose }) {
       const t0 = Date.now()
       r.timer = setInterval(() => setSec(Math.floor((Date.now() - t0) / 1000)), 250)
       setPhase('rec')
-    } catch {
-      setPhase('error'); setMsg('Không truy cập được micro. Hãy cho phép quyền micro cho trang web này rồi thử lại.')
+    } catch (err) {
+      await cleanup()
+      const n = err?.name
+      setPhase('error')
+      if (!navigator.mediaDevices?.getUserMedia) setMsg('Trang cần chạy qua HTTPS để dùng micro.')
+      else if (n === 'NotFoundError') setMsg('Không tìm thấy micro trên thiết bị.')
+      else if (n === 'NotReadableError') setMsg('Micro đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.')
+      else setMsg('Không xin được quyền micro. Nếu máy báo “Trang web này không thể yêu cầu bạn cấp quyền”, hãy tắt bong bóng chat nổi (Messenger, Zalo…) và quay màn hình, rồi bấm Thử lại. Nếu trước đó đã chọn “Chặn”, vào biểu tượng ổ khóa cạnh địa chỉ → Quyền → Micro → Cho phép.')
     }
   }, [])
 
@@ -89,10 +103,11 @@ export default function VoiceRecorder({ onSend, onClose }) {
 
   const stop = async () => {
     const r = R.current
-    const said = (r.base + r.live).trim()
+    let said = (r.base + r.live).trim()
     await cleanup()
     const b = new Blob(r.chunks, { type: r.rec?.mimeType || 'audio/webm' })
-    if (said) onSend(said, b)
+    if (!said && b.size > 1000) { setBusy(true); setMsg('Đang nhận diện giọng nói…'); said = await transcribeAudio(b); setBusy(false) }
+    if (said || strict) onSend(said, b)
     else { setBlob(b); setText(''); setPhase('review'); setMsg('Chưa nhận diện được lời nói. Bạn có thể nghe lại, gõ nội dung rồi gửi, hoặc ghi âm lại.') }
   }
   useEffect(() => { if (phase === 'rec' && sec >= MAX_SEC) stop() })   // tự dừng & gửi khi đủ thời gian
@@ -127,14 +142,14 @@ export default function VoiceRecorder({ onSend, onClose }) {
           </>
         ) : (
           <>
-            <h3>{phase === 'starting' ? 'Đang mở micro…' : 'Đang ghi âm — hãy nói tiếng Trung'}</h3>
+            <h3>{phase === 'starting' ? 'Đang mở micro…' : (title || 'Đang ghi âm — hãy nói tiếng Trung')}</h3>
             <div className="rec-time"><i className="dot" />{mmss}<small> / {MAX_SEC / 60 * 60}s</small></div>
             <canvas ref={canvas} width={420} height={90} className="rec-wave" />
             <p className={'rec-live zh' + (text ? '' : ' empty')}>{text || (SR ? '说话时文字会出现在这里…' : '')}</p>
             {msg && <p className="rec-hint">{msg}</p>}
             <div className="row nb c">
               <button className="btn ghost" onClick={cancel}>Hủy</button>
-              <button className="btn" disabled={phase !== 'rec'} onClick={stop}>■ Dừng & gửi</button>
+              <button className="btn" disabled={phase !== 'rec' || busy} onClick={stop}>■ Dừng & gửi</button>
             </div>
           </>
         )}

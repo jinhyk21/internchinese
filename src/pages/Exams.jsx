@@ -35,7 +35,7 @@ export default function Exams() {
   return (
     <>
       <PageHeader zh="考试" title="Thi thử HSK & theo ngành" crumbs={[[null, 'Thi thử']]}
-        sub="Mỗi cấp HSK có hàng trăm đề thi thử khác nhau (HSK 7-9 nhiều gấp 3), mỗi ngành cũng có 100 đề. Đề gồm chọn nghĩa, phiên âm, nghe, điền từ.">
+        sub="Mỗi cấp HSK có hàng trăm đề thi thử khác nhau (HSK 7-9 nhiều gấp 3), mỗi ngành cũng có 100 đề. Mỗi đề đủ 4 kỹ năng: 听 Nghe, 说 Nói (chấm điểm phát âm), 读 Đọc, 写 Viết.">
         <Link className="btn gold" to={`/exams/${encodeURIComponent(track)}/${random()}`}>随机 · Đề ngẫu nhiên</Link>
       </PageHeader>
 

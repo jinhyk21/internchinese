@@ -4,6 +4,7 @@ import { useAuth } from '../auth.jsx'
 import { uploadMedia, useMediaUrl } from '../storage.js'
 import { PageHeader } from '../components/ui.jsx'
 import { allLevelStats } from '../hsk.js'
+import { examSummary } from '../exam.js'
 
 export default function Profile() {
   const { profile, setProfile, user } = useAuth()
@@ -14,6 +15,7 @@ export default function Profile() {
   const [pwMsg, setPwMsg] = useState('')
   const [stats, setStats] = useState(null)
   const [hsk, setHsk] = useState(null)
+  const [exam, setExam] = useState(null)
   const stored = useMediaUrl(f.avatar_url)
   useEffect(() => { if (profile) setF(profile) }, [profile])
 
@@ -29,6 +31,7 @@ export default function Profile() {
         hours: (ses.reduce((t, x) => t + (x.duration_seconds || 0), 0) / 3600).toFixed(1),
         avg: ev.length ? Math.round(ev.reduce((t, x) => t + Number(x.overall_score), 0) / ev.length) : '—',
       })
+      examSummary(user.id).then(setExam)
       setHsk(await allLevelStats(user.id))
     })()
   }, [user.id])
@@ -83,7 +86,9 @@ export default function Profile() {
             <div><b>{stats.sessions}</b><span>Buổi luyện</span></div>
             <div><b>{stats.done}</b><span>Hoàn thành</span></div>
             <div><b>{stats.hours}h</b><span>Thời gian</span></div>
-            <div><b>{stats.avg}</b><span>Điểm TB</span></div>
+            <div><b>{stats.avg}</b><span>Điểm TB hội thoại</span></div>
+            <div><b>{exam?.count ?? '…'}</b><span>Bài thi thử</span></div>
+            <div><b>{exam ? (exam.avg ?? '—') : '…'}</b><span>Điểm TB thi thử{exam?.best != null ? ` · cao nhất ${exam.best}` : ''}</span></div>
           </div>
         )}
       </div>

@@ -5,6 +5,8 @@ import Bookmark from '../components/Bookmark.jsx'
 import { Empty, PageHeader, Pager, Skeleton } from '../components/ui.jsx'
 import { HSK_LEVELS, levelStats } from '../hsk.js'
 import { norm, hasZh } from '../text.js'
+import PronounceBox from '../components/PronounceBox.jsx'
+import { PRON_PASS, bestPron } from '../pronounce.js'
 
 const STATUS = [['learning', '学习中', 'Đang học'], ['remembered', '记住了', 'Đã nhớ'], ['mastered', '掌握', 'Thuộc']]
 const PAGE_SIZE = 36
@@ -32,6 +34,8 @@ export default function Vocabulary() {
   const [flip, setFlip] = useState({})
   const [stat, setStat] = useState(null)
   const [review, setReview] = useState(null)
+  const [pron, setPron] = useState(null)      // từ đang kiểm tra phát âm
+  const [, tick] = useState(0)                 // làm mới điểm phát âm sau khi đọc
   const [err, setErr] = useState('')
   const seq = useRef(0)
   const noCol = useRef(false)
@@ -112,6 +116,10 @@ export default function Vocabulary() {
     setReview(r => ({ ...r, i: r.i + 1, flipped: false, done: r.done + (status !== 'learning' ? 1 : 0) }))
   }
 
+  const PronBtn = ({ w }) => {
+    const b = bestPron(w.id)
+    return <button className={'btn ghost sm pronbtn' + (b != null ? (b >= PRON_PASS ? ' ok' : ' low') : '')} title="Kiểm tra phát âm" onClick={() => setPron(w)}>🎤{b != null && <i>{b}</i>}</button>
+  }
   const pages = Math.max(1, Math.ceil(count / PAGE_SIZE))
   const pick = (l) => { setLevel(l); setCat('all'); setPage(1); setFlip({}) }
   const pct = stat && stat.total ? Math.round(stat.learned / stat.total * 100) : 0
@@ -172,6 +180,7 @@ export default function Vocabulary() {
               </div>
               <div className="row">
                 <button className="btn ghost sm" onClick={() => speak(w.chinese)} aria-label="Nghe">🔊</button>
+                <PronBtn w={w} />
                 {STATUS.map(([k, zh, vi]) => (
                   <button key={k} title={vi} className={'chip sm' + (prog[w.id]?.status === k ? ' on' : '')} onClick={() => setStatus(w.id, k)}>{zh}</button>
                 ))}
@@ -190,12 +199,23 @@ export default function Vocabulary() {
               <td data-label="Cấp"><span className="tag">{w.difficulty}</span></td>
               <td data-label="Tiến độ"><div className="row nb">{STATUS.map(([k, zh]) => (
                 <button key={k} className={'chip sm' + (prog[w.id]?.status === k ? ' on' : '')} onClick={() => setStatus(w.id, k)}>{zh}</button>))}</div></td>
-              <td><button className="btn ghost sm" onClick={() => speak(w.chinese)}>🔊</button></td>
+              <td><div className="row nb"><button className="btn ghost sm" onClick={() => speak(w.chinese)}>🔊</button><PronBtn w={w} /></div></td>
             </tr>))}</tbody>
         </table></div>
       )}
 
       <Pager page={page} pages={pages} onChange={setPage} />
+
+      {pron && (
+        <div className="overlay" onClick={() => { setPron(null); tick(n => n + 1) }}>
+          <div className="reviewbox" onClick={e => e.stopPropagation()}>
+            <button className="x" onClick={() => { setPron(null); tick(n => n + 1) }}>✕</button>
+            <h3>发音 · Kiểm tra phát âm</h3>
+            <PronounceBox word={pron} />
+            <small>Điểm tính theo âm và thanh điệu của từng âm tiết · từ {PRON_PASS} điểm là đạt.</small>
+          </div>
+        </div>
+      )}
 
       {review && (
         <div className="overlay" onClick={() => setReview(null)}>

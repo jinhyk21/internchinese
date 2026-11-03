@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
@@ -26,6 +27,9 @@ export default function Layout({ children }) {
   const logout = async () => { await supabase.auth.signOut(); nav('/login') }
   const fullChat = bp === 'mobile' && pathname.startsWith('/practice')
   const initial = (profile?.full_name || '学')[0]
+  const [more, setMore] = useState(false)
+  useEffect(() => { setMore(false) }, [pathname])
+  const MAIN = 4   // mobile: 4 tab chính ở dưới; đủ toàn bộ menu nằm trong nút 3 gạch
 
   const NavItems = () => items.map(([to, zh, vi]) => (
     <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -45,12 +49,33 @@ export default function Layout({ children }) {
       {!fullChat && (
         <header className="m-top">
           <Brand />
-          <button className="m-user" onClick={logout} aria-label="Đăng xuất"><Avatar /></button>
+          <div className="m-right">
+            <button className="m-user" onClick={logout} aria-label="Đăng xuất"><Avatar /></button>
+            <button type="button" className="m-burger" onClick={() => setMore(v => !v)} aria-label="Menu" aria-expanded={more}>
+              <i /><i /><i />
+            </button>
+          </div>
         </header>
       )}
       <main className="page">{children}</main>
       {!fullChat && <Footer compact />}
-      {!fullChat && <nav className="tabbar"><NavItems /></nav>}
+      {!fullChat && more && (
+        <div className="menusheet" onClick={() => setMore(false)}>
+          <nav onClick={e => e.stopPropagation()}>
+            <NavItems />
+            <button type="button" className="ms-out" onClick={logout}><span className="zh">退出</span><small>Đăng xuất</small></button>
+          </nav>
+        </div>
+      )}
+      {!fullChat && (
+        <nav className="tabbar">
+          {items.slice(0, MAIN).map(([to, zh, vi]) => (
+            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
+              <span className="zh">{zh}</span><small>{vi}</small>
+            </NavLink>
+          ))}
+        </nav>
+      )}
     </div>
   )
 

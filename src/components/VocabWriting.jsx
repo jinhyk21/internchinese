@@ -16,16 +16,17 @@ export default function VocabWriting({ word, onNext }) {
   const [mist, setMist] = useState(0)
   const [counts, setCounts] = useState({})
   const [bad, setBad] = useState('')
+  const [perChar, setPerChar] = useState({})   // số lần sai nét của từng chữ
 
   const stop = () => { run.current++; writers.current.forEach(w => { try { w.cancelQuiz() } catch { /* chưa quiz */ } }) }
 
   useEffect(() => {
-    setMode('idle'); setCur(-1); setMist(0); setBad(''); setCounts({})
+    setMode('idle'); setCur(-1); setMist(0); setBad(''); setCounts({}); setPerChar({})
     boxes.current.slice(0, chars.length).forEach(el => { if (el) el.innerHTML = '' })
     writers.current = chars.map((ch, i) => HanziWriter.create(boxes.current[i], ch, {
       width: SIZE, height: SIZE, padding: 12, showOutline: true, showCharacter: true,
       strokeColor: '#231a14', outlineColor: '#e8d49a', highlightColor: '#c9a227', drawingColor: '#b3202a', drawingWidth: 9,
-      strokeAnimationSpeed: 1.2, delayBetweenStrokes: 220, showHintAfterMisses: 2, highlightOnComplete: true,
+      strokeAnimationSpeed: 1.2, delayBetweenStrokes: 220, showHintAfterMisses: 2, leniency: 0.6, highlightOnComplete: true,
       onLoadCharDataSuccess: (d) => setCounts(c => ({ ...c, [i]: d.strokes.length })),
       onLoadCharDataError: () => setBad(ch),
     }))
@@ -47,16 +48,21 @@ export default function VocabWriting({ word, onNext }) {
   }
 
   const quiz = () => {
-    stop(); const my = run.current; setMode('quiz'); setMist(0)
+    stop(); const my = run.current; setMode('quiz'); setMist(0); setPerChar({})
     writers.current.forEach(w => w.hideCharacter())
     const go = (i) => {
       if (my !== run.current) return
       if (i >= writers.current.length) { setMode('done'); setCur(-1); return }
       setCur(i)
-      writers.current[i].quiz({ onMistake: () => setMist(m => m + 1), onComplete: () => go(i + 1) })
+      writers.current[i].quiz({ onMistake: () => { setMist(m => m + 1); setPerChar(p => ({ ...p, [i]: (p[i] || 0) + 1 })) }, onComplete: () => go(i + 1) })
     }
     go(0)
   }
+
+  // điểm = nét đúng / (nét đúng + lần sai) · đạt khi ≥ 70
+  const totalStrokes = Object.values(counts).reduce((a, b) => a + b, 0)
+  const score = totalStrokes ? Math.round(totalStrokes / (totalStrokes + mist) * 100) : 0
+  const grade = score >= 90 ? 'Xuất sắc' : score >= 70 ? 'Đạt' : 'Chưa đạt — luyện lại'
 
   return (
     <div className="card vw">
@@ -76,7 +82,7 @@ export default function VocabWriting({ word, onNext }) {
       <p className="sp-res">
         {mode === 'anim' && `Đang chạy mẫu chữ thứ ${cur + 1}/${chars.length} — quan sát thứ tự các nét.`}
         {mode === 'quiz' && `Viết chữ thứ ${cur + 1}/${chars.length}: vẽ từng nét theo đúng thứ tự · lỗi: ${mist}`}
-        {mode === 'done' && (mist === 0 ? '🎉 Hoàn hảo! Không sai nét nào.' : `✔ Hoàn thành — bạn sai ${mist} lần. Luyện lại để viết chuẩn hơn.`)}
+        {mode === 'done' && (mist === 0 ? '🎉 Hoàn hảo! 100 điểm, không sai nét nào.' : `${score >= 70 ? '✔' : '✘'} ${score} điểm · ${grade} — sai ${mist} lần (${chars.map((c, i) => `${c}: ${perChar[i] || 0}`).join(' · ')}).`)}
         {mode === 'idle' && 'Bấm “Xem nét viết” để xem mẫu, rồi “Viết theo” để tự viết có gợi ý.'}
       </p>
       <div className="row nb c">

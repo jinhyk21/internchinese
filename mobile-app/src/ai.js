@@ -153,3 +153,20 @@ Chỉ trả JSON: {"translation":"bản dịch","alternatives":["tối đa 2 cá
     return out?.translation ? out : null
   } catch { return null }
 }
+
+// Nhận diện lời nói từ file ghi âm bằng Gemini (dự phòng khi trình duyệt không nhận diện được). Trả '' nếu không được.
+export async function transcribeAudio(blob, lang = 'Chinese') {
+  if (!KEY || !blob) return ''
+  try {
+    const data = await new Promise((res, rej) => {
+      const fr = new FileReader()
+      fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej
+      fr.readAsDataURL(blob)
+    })
+    const mime = (blob.type || 'audio/webm').split(';')[0]
+    const out = await gemini(
+      `Transcribe the speech in the audio verbatim in ${lang} (Chinese characters). Reply JSON: {"text": "..."}; use "" if no speech.`,
+      [{ role: 'user', parts: [{ inlineData: { mimeType: mime, data } }, { text: 'Transcribe.' }] }])
+    return String(out?.text || '').trim()
+  } catch { return '' }
+}
