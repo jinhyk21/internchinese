@@ -1,22 +1,26 @@
+import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth.jsx'
 import Layout from './components/Layout.jsx'
 import Login from './pages/Login.jsx'
-import Home from './pages/Home.jsx'
-import Practice from './pages/Practice.jsx'
-import Vocabulary from './pages/Vocabulary.jsx'
-import History from './pages/History.jsx'
-import Profile from './pages/Profile.jsx'
-import Result from './pages/Result.jsx'
-import Saved from './pages/Saved.jsx'
+const Home = lazy(() => import('./pages/Home.jsx'))
+const Practice = lazy(() => import('./pages/Practice.jsx'))
+const Vocabulary = lazy(() => import('./pages/Vocabulary.jsx'))
+const History = lazy(() => import('./pages/History.jsx'))
+const Profile = lazy(() => import('./pages/Profile.jsx'))
+const Result = lazy(() => import('./pages/Result.jsx'))
+const Saved = lazy(() => import('./pages/Saved.jsx'))
 import Reset from './pages/Reset.jsx'
-import Translate from './pages/Translate.jsx'
-import Admin from './pages/Admin.jsx'
+const Translate = lazy(() => import('./pages/Translate.jsx'))
+const Admin = lazy(() => import('./pages/Admin.jsx'))
+const Writing = lazy(() => import('./pages/Writing.jsx'))
+const Exams = lazy(() => import('./pages/Exams.jsx'))
+const ExamTake = lazy(() => import('./pages/ExamTake.jsx'))
 
 function Private({ children }) {
   const { session, loading } = useAuth()
   if (loading) return <div className="center-screen"><span className="seal">学</span></div>
-  return session ? <Layout>{children}</Layout> : <Navigate to="/login" replace />
+  return session ? <Layout><Suspense fallback={<div className="center-screen"><span className="seal">学</span></div>}>{children}</Suspense></Layout> : <Navigate to="/login" replace />
 }
 
 export default function App() {
@@ -28,6 +32,9 @@ export default function App() {
       <Route path="/practice/:scenarioId" element={<Private><Practice /></Private>} />
       <Route path="/translate" element={<Private><Translate /></Private>} />
       <Route path="/vocabulary" element={<Private><Vocabulary /></Private>} />
+      <Route path="/writing" element={<Private><Writing /></Private>} />
+      <Route path="/exams" element={<Private><Exams /></Private>} />
+      <Route path="/exams/:track/:no" element={<Private><ExamTake /></Private>} />
       <Route path="/history" element={<Private><History /></Private>} />
       <Route path="/history/:sessionId" element={<Private><Result /></Private>} />
       <Route path="/saved" element={<Private><Saved /></Private>} />

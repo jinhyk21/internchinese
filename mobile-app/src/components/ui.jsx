@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { pageList } from '../paged.js'
 
 // Banner đầu trang: chữ Hán lớn mờ làm nền, breadcrumb, tiêu đề, mô tả, khu vực hành động
 export function PageHeader({ zh, title, sub, crumbs = [], children }) {
@@ -32,7 +33,27 @@ export function Empty({ zh = '空', title, text, to, cta }) {
   )
 }
 
-export const LEVEL = { beginner: '初级 · Cơ bản', intermediate: '中级 · Trung cấp', advanced: '高级 · Nâng cao' }
+export function Pager({ page, pages, onChange }) {
+  if (pages <= 1) return null
+  return (
+    <nav className="pager">
+      <button disabled={page <= 1} onClick={() => onChange(page - 1)}>‹</button>
+      {pageList(page, pages).map(n => typeof n === 'string'
+        ? <span key={n} className="dots">…</span>
+        : <button key={n} className={n === page ? 'on' : ''} onClick={() => onChange(n)}>{n}</button>)}
+      <button disabled={page >= pages} onClick={() => onChange(page + 1)}>›</button>
+    </nav>
+  )
+}
+
+// Cuối danh sách cuộn vô hạn: phần tử theo dõi + dòng trạng thái
+export function MoreSentinel({ sentinel, done, shown, count }) {
+  return done
+    ? <p className="resultinfo c">Đã hiển thị toàn bộ {count} mục</p>
+    : <div key={shown} ref={sentinel} className="more"><small>Đang tải thêm…</small></div>
+}
+
+export const LEVEL ={ beginner: '初级 · Cơ bản', intermediate: '中级 · Trung cấp', advanced: '高级 · Nâng cao' }
 export const ICON = { briefcase: '办', handshake: '商', package: '货', plane: '游', users: '人', factory: '工' }
 
 export const scoreClass = (n) => (n >= 80 ? 'good' : n >= 65 ? 'mid' : 'low')

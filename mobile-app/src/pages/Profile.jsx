@@ -133,6 +133,7 @@ export default function Profile() {
             <button className="btn ghost">Đổi mật khẩu</button>
           </form>
           <div className="panel app-menu" style={{ marginTop: '1.2rem' }}>
+            <Link to="/history"><span className="zh">记录</span> Lịch sử luyện tập <i>›</i></Link>
             <Link to="/saved"><span className="zh">收藏</span> Đã lưu <i>›</i></Link>
             {profile?.role === 'admin' && <Link to="/admin"><span className="zh">管理</span> Quản trị <i>›</i></Link>}
             <button type="button" onClick={logout}><span className="zh">退出</span> Đăng xuất</button>

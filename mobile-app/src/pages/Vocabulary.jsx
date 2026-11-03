@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
 import Bookmark from '../components/Bookmark.jsx'
-import { Empty, PageHeader, Skeleton } from '../components/ui.jsx'
+import { Empty, PageHeader, Pager, Skeleton } from '../components/ui.jsx'
 import { HSK_LEVELS, levelStats } from '../hsk.js'
 import { norm, hasZh } from '../text.js'
 
 const STATUS = [['learning', '学习中', 'Đang học'], ['remembered', '记住了', 'Đã nhớ'], ['mastered', '掌握', 'Thuộc']]
 const PAGE_SIZE = 36
+const COLS = 'id,chinese,pinyin,vietnamese,difficulty,category_id,example_chinese,example_pinyin,example_vietnamese,created_at'
 const speak = (t) => {
   const u = new SpeechSynthesisUtterance(t); u.lang = 'zh-CN'
   speechSynthesis.cancel(); speechSynthesis.speak(u)
@@ -43,7 +44,7 @@ export default function Vocabulary() {
     setRows(null); setErr('')
     const from = (page - 1) * PAGE_SIZE
     const build = (useCol) => {
-      let query = supabase.from('vocabulary').select('*', { count: 'exact' })
+      let query = supabase.from('vocabulary').select(COLS, { count: 'exact' })
       if (!qd) {                       // đang tìm kiếm thì tìm trên TOÀN BỘ kho, không giới hạn cấp HSK
         if (level === 'industry') query = query.not('category_id', 'is', null)
         else query = query.eq('difficulty', level).is('category_id', null)   // tab HSK = từ chung, từ ngành nằm ở tab "Theo ngành"
@@ -97,7 +98,7 @@ export default function Vocabulary() {
     query = level === 'industry' ? query.not('category_id', 'is', null) : query.eq('difficulty', level).is('category_id', null)
     const { count: total } = await query.range(0, 0)
     const start = Math.max(0, Math.floor(Math.random() * Math.max(1, (total || 0) - 60)))
-    let q2 = supabase.from('vocabulary').select('*')
+    let q2 = supabase.from('vocabulary').select(COLS)
     q2 = level === 'industry' ? q2.not('category_id', 'is', null) : q2.eq('difficulty', level).is('category_id', null)
     const { data } = await q2.order('created_at').order('id').range(start, start + 59)
     const ids = (data || []).map(x => x.id)
@@ -113,12 +114,6 @@ export default function Vocabulary() {
 
   const pages = Math.max(1, Math.ceil(count / PAGE_SIZE))
   const pick = (l) => { setLevel(l); setCat('all'); setPage(1); setFlip({}) }
-  const pageNums = (() => {
-    const s = new Set([1, pages, page, page - 1, page + 1, page - 2, page + 2].filter(n => n >= 1 && n <= pages))
-    const arr = [...s].sort((a, b) => a - b), out = []
-    arr.forEach((n, i) => { if (i && n - arr[i - 1] > 1) out.push('d' + n); out.push(n) })
-    return out
-  })()
   const pct = stat && stat.total ? Math.round(stat.learned / stat.total * 100) : 0
 
   return (
@@ -168,12 +163,12 @@ export default function Vocabulary() {
               <Bookmark kind="vocabulary" id={w.id} initial={marks.has(w.id)} />
               <span className="lvl">{w.difficulty}</span>
               <div onClick={() => setFlip({ ...flip, [w.id]: !flip[w.id] })} className="face">
-                {!flip[w.id] ? (
-                  <><div className="hanzi">{w.chinese}</div><div className="pinyin">{w.pinyin}</div><small>Nhấn để lật</small></>
-                ) : (
-                  <><div className="vi">{w.vietnamese}</div>
-                    {w.example_chinese && <><p className="zh ex">{w.example_chinese}</p><small>{w.example_pinyin}</small><small>{w.example_vietnamese}</small></>}</>
-                )}
+                <div className="hanzi">{w.chinese}</div>
+                <div className="pinyin">{w.pinyin}</div>
+                <div className="vi">{w.vietnamese}</div>
+                {flip[w.id]
+                  ? (w.example_chinese ? <><p className="zh ex">{w.example_chinese}</p><small>{w.example_pinyin}</small><small>{w.example_vietnamese}</small></> : <small>Chưa có câu ví dụ</small>)
+                  : <small>Nhấn để xem câu ví dụ</small>}
               </div>
               <div className="row">
                 <button className="btn ghost sm" onClick={() => speak(w.chinese)} aria-label="Nghe">🔊</button>
@@ -200,15 +195,7 @@ export default function Vocabulary() {
         </table></div>
       )}
 
-      {pages > 1 && (
-        <nav className="pager">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)}>‹</button>
-          {pageNums.map(n => typeof n === 'string'
-            ? <span key={n} className="dots">…</span>
-            : <button key={n} className={n === page ? 'on' : ''} onClick={() => setPage(n)}>{n}</button>)}
-          <button disabled={page >= pages} onClick={() => setPage(page + 1)}>›</button>
-        </nav>
-      )}
+      <Pager page={page} pages={pages} onChange={setPage} />
 
       {review && (
         <div className="overlay" onClick={() => setReview(null)}>

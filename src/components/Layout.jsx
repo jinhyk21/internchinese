@@ -8,6 +8,8 @@ import Footer from './Footer.jsx'
 const links = [
   ['/', '情景', 'Tình huống'],
   ['/vocabulary', '词汇', 'Từ vựng'],
+  ['/writing', '写字', 'Luyện viết'],
+  ['/exams', '考试', 'Thi thử'],
   ['/translate', '翻译', 'Dịch'],
   ['/history', '记录', 'Lịch sử'],
   ['/saved', '收藏', 'Đã lưu'],

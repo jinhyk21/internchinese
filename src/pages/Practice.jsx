@@ -7,7 +7,7 @@ import { useBreakpoint } from '../useBreakpoint.js'
 import { Skeleton } from '../components/ui.jsx'
 import { aiChat, aiEvaluate, aiMode } from '../ai.js'
 
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+import VoiceRecorder from '../components/VoiceRecorder.jsx'
 const speak = (t) => {
   const u = new SpeechSynthesisUtterance(t); u.lang = 'zh-CN'
   speechSynthesis.cancel(); speechSynthesis.speak(u)
@@ -26,7 +26,7 @@ export default function Practice() {
   const [text, setText] = useState('')
   const [showVi, setShowVi] = useState(true)
   const [voice, setVoice] = useState(false)
-  const [listening, setListening] = useState(false)
+  const [rec, setRec] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [sec, setSec] = useState(0)
@@ -95,26 +95,6 @@ export default function Practice() {
       setMsgs([...history, a])
       if (voice) speak(r.reply)
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
-  }
-
-  const listen = async () => {
-    if (!SR) return setErr('Trình duyệt không hỗ trợ nhận diện giọng nói (hãy dùng Chrome/Edge).')
-    let rec, chunks = []
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      rec = new MediaRecorder(stream)
-      rec.ondataavailable = e => chunks.push(e.data)
-      rec.onstop = () => stream.getTracks().forEach(t => t.stop())
-      rec.start()
-    } catch { return setErr('Không truy cập được micro.') }
-    const r = new SR(); r.lang = 'zh-CN'
-    r.onstart = () => setListening(true)
-    r.onend = () => { setListening(false); if (rec.state !== 'inactive') rec.stop() }
-    r.onresult = (e) => {
-      const said = e.results[0][0].transcript
-      rec.onstop = () => { rec.stream?.getTracks().forEach(t => t.stop()); send(said, new Blob(chunks, { type: 'audio/webm' })) }
-    }
-    r.start()
   }
 
   const playMine = async (path) => { const u = await mediaUrl(path); if (u) new Audio(u).play() }
@@ -211,11 +191,12 @@ export default function Practice() {
         </div>
         {err && <p className="msg" style={{ padding: '0 1rem' }}>{err}</p>}
         <form className="composer" onSubmit={e => { e.preventDefault(); send(text) }}>
-          {voice && <button type="button" className={'btn ghost mic' + (listening ? ' on' : '')} onClick={listen}>🎤</button>}
+          <button type="button" className="btn ghost mic" disabled={busy} onClick={() => setRec(true)} aria-label="Ghi âm">🎤</button>
           <input value={text} onChange={e => setText(e.target.value)} placeholder="请输入中文… Nhập tiếng Trung" />
           <button className="btn" disabled={busy}>发送</button>
         </form>
       </section>
+      {rec && <VoiceRecorder onClose={() => setRec(false)} onSend={(t, b) => { setRec(false); send(t, b) }} />}
     </div>
   )
 }

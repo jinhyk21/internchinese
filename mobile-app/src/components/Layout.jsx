@@ -6,13 +6,14 @@ import { useMediaUrl } from '../storage.js'
 const TABS = [
   ['/', '情景', 'Tình huống'],
   ['/vocabulary', '词汇', 'Từ vựng'],
+  ['/writing', '写字', 'Luyện viết'],
+  ['/exams', '考试', 'Thi thử'],
   ['/translate', '翻译', 'Dịch'],
-  ['/history', '记录', 'Lịch sử'],
   ['/profile', '我的', 'Hồ sơ'],
 ]
 const TITLES = {
   '/': ['情景', 'InternChinese'], '/vocabulary': ['词汇', 'Từ vựng'], '/translate': ['翻译', 'Dịch'],
-  '/history': ['记录', 'Lịch sử'], '/saved': ['收藏', 'Đã lưu'], '/profile': ['我的', 'Hồ sơ'], '/admin': ['管理', 'Quản trị'],
+  '/writing': ['写字', 'Luyện viết'], '/exams': ['考试', 'Thi thử'], '/history': ['记录', 'Lịch sử'], '/saved': ['收藏', 'Đã lưu'], '/profile': ['我的', 'Hồ sơ'], '/admin': ['管理', 'Quản trị'],
 }
 
 export default function Layout({ children }) {
