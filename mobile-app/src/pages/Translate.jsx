@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { pinyin } from 'pinyin-pro'
 import { supabase } from '../supabase'
+import { useToast } from '../toast.jsx'
 import { aiTranslate } from '../ai.js'
 import { hasZh, norm } from '../text.js'
 import { PageHeader } from '../components/ui.jsx'
@@ -28,6 +29,7 @@ async function breakdown(text) {
 }
 
 export default function Translate() {
+  const toast = useToast()
   const [dir, setDir] = useState('zh-vi')
   const [text, setText] = useState('')
   const [pad, setPad] = useState(false)
@@ -65,7 +67,7 @@ export default function Translate() {
   }
 
   const swap = () => { const nd = zhIn ? 'vi-zh' : 'zh-vi'; setDir(nd); setText(res?.ai?.translation || ''); setRes(null) }
-  const copy = async (s) => { try { await navigator.clipboard.writeText(s); setCopied(true); setTimeout(() => setCopied(false), 1200) } catch { /* bỏ qua */ } }
+  const copy = async (s) => { try { await navigator.clipboard.writeText(s); setCopied(true); setTimeout(() => setCopied(false), 1200); toast('Đã sao chép') } catch { toast('Không sao chép được', 'err') } }
   const zhText = res?.zh
   const py = useMemo(() => (zhText && hasZh(zhText) ? pinyin(zhText) : ''), [zhText])
 

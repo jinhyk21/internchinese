@@ -3,6 +3,7 @@ import HanziWriter from 'hanzi-writer'
 import DrawBox from './DrawBox.jsx'
 import { cjk } from './WordPicker.jsx'
 import { recognizeInk } from '../handwriting.js'
+import { useToast } from '../toast.jsx'
 
 // Số nét chuẩn của một chữ (hanzi-writer); null nếu chưa có dữ liệu
 const strokeCache = {}
@@ -25,6 +26,7 @@ export default function FreeWriting({ word, onNext }) {
   const [res, setRes] = useState({})
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const toast = useToast()
 
   useEffect(() => { setRes({}); setErr(''); refs.current.forEach(r => r?.clear()) }, [chars])
 
@@ -46,7 +48,7 @@ export default function FreeWriting({ word, onNext }) {
         out[i] = { ok: !why, exact: rank === 0, why, cands: c, got, exp }
       }
       setRes(out)
-    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+    } catch (e) { setErr(e.message); toast('Chấm chữ viết tay thất bại: ' + e.message, 'err') } finally { setBusy(false) }
   }
   const clearAll = () => { refs.current.forEach(r => r?.clear()); setRes({}) }
   const okAll = chars.length > 0 && chars.every((_, i) => res[i]?.ok)

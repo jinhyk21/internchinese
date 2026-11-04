@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import DrawBox from './DrawBox.jsx'
 import { cjk } from './WordPicker.jsx'
 import { recognizeInk } from '../handwriting.js'
+import { useToast } from '../toast.jsx'
 
 // Tập viết tổng thể KHÔNG hướng dẫn: chỉ có chữ mẫu, người học tự viết vào ô trống; máy nhận diện chữ để kiểm tra.
 export default function FreeWriting({ word, onNext }) {
@@ -11,6 +12,7 @@ export default function FreeWriting({ word, onNext }) {
   const [res, setRes] = useState({})
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const toast = useToast()
 
   useEffect(() => { setRes({}); setErr(''); refs.current.forEach(r => r?.clear()) }, [chars])
 
@@ -25,7 +27,7 @@ export default function FreeWriting({ word, onNext }) {
         out[i] = { ok: c.slice(0, 5).includes(chars[i]), first: c[0], cands: c.slice(0, 5) }
       }
       setRes(out)
-    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+    } catch (e) { setErr(e.message); toast('Chấm chữ viết tay thất bại: ' + e.message, 'err') } finally { setBusy(false) }
   }
   const clearAll = () => { refs.current.forEach(r => r?.clear()); setRes({}) }
   const okAll = chars.length > 0 && chars.every((_, i) => res[i]?.ok)

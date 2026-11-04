@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
+import { useToast } from '../toast.jsx'
 import { Empty, PageHeader, Skeleton } from '../components/ui.jsx'
 import { scorePronunciation } from '../pronounce.js'
 import PronounceBox from '../components/PronounceBox.jsx'
@@ -15,6 +16,7 @@ export default function ExamTake() {
   const { track, no } = useParams()
   const n = Number(no)
   const { user } = useAuth()
+  const toast = useToast()
   const nav = useNavigate()
   const [pool, setPool] = useState(null)
   const [err, setErr] = useState('')
@@ -27,7 +29,7 @@ export default function ExamTake() {
 
   useEffect(() => {
     setPool(null); setErr(''); setCur(0); setAns({}); setResult(null); setSaved(false); t0.current = Date.now()
-    fetchPool(track).then(setPool).catch(e => setErr(e.message))
+    fetchPool(track).then(setPool).catch(e => { setErr(e.message); toast('Không tải được đề thi: ' + e.message, 'err') })
   }, [track, no])
   useEffect(() => {
     if (result) return
@@ -53,14 +55,18 @@ export default function ExamTake() {
     const score = Math.round(correct / qs.length * 100), duration = Math.round((Date.now() - t0.current) / 1000)
     setResult({ correct, score, duration })
     window.scrollTo({ top: 0 })
-    await saveResult(user.id, { track, exam_no: n, score, correct, total: qs.length, duration_seconds: duration })
+    try { await saveResult(user.id, { track, exam_no: n, score, correct, total: qs.length, duration_seconds: duration }); toast(`Đã nộp bài: ${score} điểm`) }
+    catch (e) { toast('Chưa lưu được kết quả: ' + e.message, 'err') }
   }
   const saveWrong = async () => {
     const rows = qs.filter(x => !isRight(x, ans[x.id])).map(x => ({
       user_id: user.id, vocabulary_id: x.word.id, status: 'learning', last_reviewed_at: new Date().toISOString(),
     }))
-    if (rows.length) await supabase.from('user_vocabulary').upsert(rows, { onConflict: 'user_id,vocabulary_id' })
-    setSaved(true)
+    if (rows.length) {
+      const { error } = await supabase.from('user_vocabulary').upsert(rows, { onConflict: 'user_id,vocabulary_id' })
+      if (error) return toast('Không lưu được từ sai: ' + error.message, 'err')
+    }
+    setSaved(true); toast(`Đã lưu ${rows.length} từ sai vào danh sách đang học`)
   }
 
   const title = `Đề số ${n}`

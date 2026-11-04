@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { recognizeInk } from '../handwriting.js'
+import { useToast } from '../toast.jsx'
 
 // Bảng viết tay: vẽ bằng chuột/ngón tay/bút, tự nhận diện sau khi nhấc bút, chọn chữ gợi ý để chèn vào ô nhập.
 export default function HandwritingPad({ onPick }) {
@@ -10,6 +11,7 @@ export default function HandwritingPad({ onPick }) {
   const [cands, setCands] = useState([])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const toast = useToast()
   const [empty, setEmpty] = useState(true)
 
   const paint = useCallback(() => {
@@ -53,7 +55,7 @@ export default function HandwritingPad({ onPick }) {
     if (!strokes.current.length) return
     setBusy(true); setErr('')
     try { setCands(await recognizeInk(strokes.current, cv.current.width, cv.current.height)) }
-    catch (e) { setErr(e.message) } finally { setBusy(false) }
+    catch (e) { setErr(e.message); toast('Nhận diện chữ viết tay thất bại: ' + e.message, 'err') } finally { setBusy(false) }
   }
   const clear = () => { clearTimeout(timer.current); strokes.current = []; cur.current = null; setCands([]); setErr(''); setEmpty(true); paint() }
   const undo = () => {

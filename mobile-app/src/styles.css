@@ -469,3 +469,12 @@ body { background: #2a1812; }
  .wr-cols, .sp { grid-template-columns: 1fr; } .wp { position: static; }   .fw-model, .fw-box { width: 140px; height: 140px; } .fw-model { font-size: 5.2rem; } .tabbar { overflow-x: auto; } .tabbar a { flex: 0 0 20%; } 
 .tabbar a { flex: 1 0 0; min-width: 62px; }
 .sp-board .hw-hint { display: none; }
+
+/* ---------- toast nổi ---------- */
+.toasts { position: fixed; z-index: 1000; right: 1rem; top: 1rem; display: flex; flex-direction: column; gap: .5rem; width: min(380px, calc(100vw - 2rem)); pointer-events: none; }
+.toast { pointer-events: auto; cursor: pointer; display: flex; gap: .7rem; align-items: center; padding: .75rem 1rem; background: var(--paper-2); color: var(--ink); border: 1px solid var(--gold); border-left: 5px solid var(--jade); border-radius: 6px; box-shadow: 0 8px 28px rgba(0,0,0,.28); animation: toastin .22s ease-out; font-size: .92rem; line-height: 1.4; }
+.toast.err { border-left-color: var(--red); } .toast.info { border-left-color: var(--gold); }
+.toast .ti { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: .8rem; background: var(--jade); }
+.toast.err .ti { background: var(--red); } .toast.info .ti { background: var(--gold); color: var(--ink); }
+@keyframes toastin { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@media (max-width: 699px) { .toasts { right: .75rem; left: .75rem; width: auto; top: auto; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } }

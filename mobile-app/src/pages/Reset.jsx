@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { useToast } from '../toast.jsx'
 
 export default function Reset() {
   const nav = useNavigate()
+  const toast = useToast()
   const [pw, setPw] = useState('')
   const [msg, setMsg] = useState('')
   const submit = async (e) => {
     e.preventDefault()
     const { error } = await supabase.auth.updateUser({ password: pw })
-    if (error) return setMsg(error.message)
-    nav('/')
+    if (error) { toast(error.message, 'err'); return setMsg(error.message) }
+    toast('Đã đặt mật khẩu mới'); nav('/')
   }
   return (
     <div className="login-wrap">

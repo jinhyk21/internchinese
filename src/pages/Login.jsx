@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
+import { useToast } from '../toast.jsx'
 
 export default function Login() {
-  const { session } = useAuth()
+  const { session, blocked } = useAuth()
+  const toast = useToast()
+  const say = (t, k = 'err') => { setMsg(t); toast(t, k) }
   const [mode, setMode] = useState('login')
   const [f, setF] = useState({ email: '', password: '', full_name: '' })
   const [msg, setMsg] = useState('')
@@ -12,19 +15,20 @@ export default function Login() {
   if (session) return <Navigate to="/" replace />
 
   const forgot = async () => {
-    if (!f.email) return setMsg('Nhập email trước rồi bấm "Quên mật khẩu".')
+    if (!f.email) return say('Nhập email trước rồi bấm "Quên mật khẩu".')
     const { error } = await supabase.auth.resetPasswordForEmail(f.email, { redirectTo: window.location.origin + '/reset' })
-    setMsg(error ? error.message : 'Đã gửi email đặt lại mật khẩu. Hãy kiểm tra hộp thư.')
+    error ? say(error.message) : say('Đã gửi email đặt lại mật khẩu. Hãy kiểm tra hộp thư.', 'ok')
   }
 
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setMsg('')
     const { error, data } = mode === 'login'
       ? await supabase.auth.signInWithPassword({ email: f.email, password: f.password })
-      : await supabase.auth.signUp({ email: f.email, password: f.password, options: { data: { full_name: f.full_name }, emailRedirectTo: window.location.origin } })
+      : await supabase.auth.signUp({ email: f.email, password: f.password, options: { data: { full_name: f.full_name, role: 'student' }, emailRedirectTo: window.location.origin } })
     setBusy(false)
-    if (error) setMsg(error.message)
-    else if (mode === 'register' && !data.session) setMsg('Đăng ký thành công! Hãy kiểm tra email để xác nhận tài khoản.')
+    if (error) say(error.message)
+    else if (mode === 'register' && !data.session) say('Đăng ký thành công! Hãy kiểm tra email để xác nhận tài khoản.', 'ok')
+    else if (mode === 'login') toast('Đăng nhập thành công')
   }
 
   return (
@@ -46,7 +50,7 @@ export default function Login() {
           )}
           <label>Email<input type="email" required value={f.email} onChange={e => setF({ ...f, email: e.target.value })} /></label>
           <label>Mật khẩu<input type="password" minLength={6} required value={f.password} onChange={e => setF({ ...f, password: e.target.value })} /></label>
-          {msg && <p className="msg">{msg}</p>}
+          {(msg || blocked) && <p className="msg">{msg || 'Tài khoản đã bị khóa. Liên hệ quản trị viên.'}</p>}
           <button className="btn" disabled={busy}>{mode === 'login' ? '登录 · Đăng nhập' : '注册 · Đăng ký'}</button>
         </form>
         {mode === 'login' && <button className="link" onClick={forgot}>Quên mật khẩu?</button>}<br />

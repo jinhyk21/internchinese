@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { transcribeAudio } from '../ai.js'
+import { useToast } from '../toast.jsx'
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
 const MAX_SEC = 90
@@ -12,6 +13,8 @@ export default function VoiceRecorder({ onSend, onClose, strict = false, title }
   const [sec, setSec] = useState(0)
   const [text, setText] = useState('')
   const [msg, setMsg] = useState('')
+  const toast = useToast()
+  useEffect(() => { if (msg) toast(msg, /không|chưa|cần|đang được/i.test(msg) ? 'err' : 'info') }, [msg])
   const [blob, setBlob] = useState(null)
   const [busy, setBusy] = useState(false)
   const canvas = useRef(null)

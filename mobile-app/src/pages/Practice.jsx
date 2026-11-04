@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
+import { useToast } from '../toast.jsx'
 import { uploadMedia, mediaUrl } from '../storage.js'
 import { useBreakpoint } from '../useBreakpoint.js'
 import { Skeleton } from '../components/ui.jsx'
@@ -16,6 +17,7 @@ const speak = (t) => {
 export default function Practice() {
   const { scenarioId } = useParams()
   const { user, profile } = useAuth()
+  const toast = useToast()
   const nav = useNavigate()
   const bp = useBreakpoint()
   const [pane, setPane] = useState('chat')
@@ -71,7 +73,11 @@ export default function Practice() {
 
   const setMode = async (v) => {
     setVoice(v)
-    if (sessionId) await supabase.from('conversation_sessions').update({ communication_mode: v ? 'voice' : 'text' }).eq('id', sessionId)
+    if (sessionId) {
+      const { error } = await supabase.from('conversation_sessions').update({ communication_mode: v ? 'voice' : 'text' }).eq('id', sessionId)
+      if (error) return toast('Không đổi được chế độ: ' + error.message, 'err')
+    }
+    toast(v ? 'Đã bật chế độ giọng nói' : 'Đã chuyển sang chế độ gõ chữ', 'info')
   }
 
   const send = async (content, audio) => {
@@ -94,7 +100,7 @@ export default function Practice() {
         .select().single()
       setMsgs([...history, a])
       if (voice) speak(r.reply)
-    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+    } catch (e) { setErr(e.message); toast('Gửi tin nhắn thất bại: ' + e.message, 'err') } finally { setBusy(false) }
   }
 
   const playMine = async (path) => { const u = await mediaUrl(path); if (u) new Audio(u).play() }
@@ -118,11 +124,13 @@ export default function Practice() {
           recommendations: ev.recommendations, detailed_feedback: { summary: ev.summary },
         })
         if (error) throw error
+        toast('Đã chấm điểm xong buổi luyện')
         return nav(`/history/${sessionId}`)
       }
+      toast('Đã kết thúc buổi luyện', 'info')
       nav('/history')
     } catch (e) {
-      setErr('Đã lưu buổi luyện nhưng chưa chấm điểm được: ' + e.message); setBusy(false)
+      setErr('Đã lưu buổi luyện nhưng chưa chấm điểm được: ' + e.message); toast('Chưa chấm điểm được: ' + e.message, 'err'); setBusy(false)
     }
   }
 

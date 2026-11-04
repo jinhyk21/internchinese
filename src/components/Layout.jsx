@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
+import { useToast } from '../toast.jsx'
 import { useMediaUrl } from '../storage.js'
 import { useBreakpoint } from '../useBreakpoint.js'
 import Footer from './Footer.jsx'
@@ -20,11 +21,12 @@ const links = [
 export default function Layout({ children }) {
   const { profile } = useAuth()
   const nav = useNavigate()
+  const toast = useToast()
   const { pathname } = useLocation()
   const bp = useBreakpoint()
   const avatar = useMediaUrl(profile?.avatar_url)
   const items = profile?.role === 'admin' ? [...links, ['/admin', '管理', 'Quản trị']] : links
-  const logout = async () => { await supabase.auth.signOut(); nav('/login') }
+  const logout = async () => { await supabase.auth.signOut(); toast('Đã đăng xuất', 'info'); nav('/login') }
   const fullChat = bp === 'mobile' && pathname.startsWith('/practice')
   const initial = (profile?.full_name || '学')[0]
   const [more, setMore] = useState(false)

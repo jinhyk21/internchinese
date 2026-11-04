@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
+import { useToast } from '../toast.jsx'
 import Bookmark from '../components/Bookmark.jsx'
 import { Empty, PageHeader, Pager, Skeleton } from '../components/ui.jsx'
 import { HSK_LEVELS, levelStats } from '../hsk.js'
@@ -18,6 +19,7 @@ const clean = (s) => s.replace(/[,()%*\\]/g, ' ').trim()
 
 export default function Vocabulary() {
   const { user } = useAuth()
+  const toast = useToast()
   const [cats, setCats] = useState([])
   const [level, setLevel] = useState('HSK 1')      // 'HSK n' | 'industry'
   const [cat, setCat] = useState('all')
@@ -63,7 +65,7 @@ export default function Vocabulary() {
       ;({ data, count: c, error } = await build(false))
     }
     if (my !== seq.current) return
-    if (error) { setErr(error.message); setRows([]); return }
+    if (error) { setErr(error.message); toast('Không tải được từ vựng: ' + error.message, 'err'); setRows([]); return }
     setRows(data); setCount(c || 0)
     const ids = data.map(x => x.id)
     if (ids.length) {
@@ -88,8 +90,9 @@ export default function Vocabulary() {
       user_id: user.id, vocabulary_id: vid, status,
       review_count: (prog[vid]?.review_count || 0) + 1, last_reviewed_at: new Date().toISOString(),
     }
-    const { data } = await supabase.from('user_vocabulary').upsert(row, { onConflict: 'user_id,vocabulary_id' }).select().single()
-    if (data) setProg(p => ({ ...p, [vid]: data }))
+    const { data, error } = await supabase.from('user_vocabulary').upsert(row, { onConflict: 'user_id,vocabulary_id' }).select().single()
+    if (error) return toast('Không lưu được tiến độ: ' + error.message, 'err')
+    if (data) { setProg(p => ({ ...p, [vid]: data })); toast({ learning: 'Đánh dấu: đang học', remembered: 'Đánh dấu: đã nhớ', mastered: 'Đánh dấu: đã thuộc' }[status] || 'Đã lưu') }
   }
 
   // Ôn tập: lấy một khoảng ngẫu nhiên của cấp hiện tại, loại từ đã nhớ/thuộc

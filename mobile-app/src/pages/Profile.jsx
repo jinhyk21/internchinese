@@ -4,11 +4,13 @@ import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
 import { uploadMedia, useMediaUrl } from '../storage.js'
 import { PageHeader } from '../components/ui.jsx'
+import { useToast } from '../toast.jsx'
 import { allLevelStats } from '../hsk.js'
 
 export default function Profile() {
   const nav = useNavigate()
-  const logout = async () => { await supabase.auth.signOut(); nav('/login') }
+  const toast = useToast()
+  const logout = async () => { await supabase.auth.signOut(); toast('Đã đăng xuất', 'info'); nav('/login') }
   const { profile, setProfile, user } = useAuth()
   const [f, setF] = useState({})
   const [msg, setMsg] = useState('')
@@ -41,8 +43,8 @@ export default function Profile() {
     const { id, avatar_url, full_name, university, student_code, chinese_level, internship_field } = f
     const { data, error } = await supabase.from('profiles')
       .update({ avatar_url, full_name, university, student_code, chinese_level, internship_field }).eq('id', id).select().single()
-    if (error) return setMsg(error.message)
-    setProfile(data); setMsg('Đã lưu ✓')
+    if (error) { toast(error.message, 'err'); return setMsg(error.message) }
+    setProfile(data); setMsg('Đã lưu ✓'); toast('Đã lưu hồ sơ')
   }
   const pickAvatar = (e) => {
     const file = e.target.files[0]
@@ -53,11 +55,11 @@ export default function Profile() {
       const side = Math.min(img.width, img.height)
       c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 256, 256)
       c.toBlob(async (blob) => {
-        setPreview(URL.createObjectURL(blob)); setMsg('Đang tải ảnh lên…')
+        setPreview(URL.createObjectURL(blob)); setMsg('Đang tải ảnh lên…'); toast('Đang tải ảnh lên…', 'info')
         try {
           const path = await uploadMedia(`avatars/${f.id}/avatar.jpg`, blob)
-          setF(prev => ({ ...prev, avatar_url: path })); setMsg('Đã tải ảnh, bấm Lưu để hoàn tất.')
-        } catch (err) { setMsg('Không tải được ảnh: ' + err.message) }
+          setF(prev => ({ ...prev, avatar_url: path })); setMsg('Đã tải ảnh, bấm Lưu để hoàn tất.'); toast('Đã tải ảnh, bấm Lưu để hoàn tất', 'info')
+        } catch (err) { setMsg('Không tải được ảnh: ' + err.message); toast('Không tải được ảnh: ' + err.message, 'err') }
       }, 'image/jpeg', 0.85)
     }
     img.src = URL.createObjectURL(file)
@@ -65,7 +67,7 @@ export default function Profile() {
   const changePw = async (e) => {
     e.preventDefault()
     const { error } = await supabase.auth.updateUser({ password: pw })
-    setPwMsg(error ? error.message : 'Đã đổi mật khẩu ✓'); if (!error) setPw('')
+    setPwMsg(error ? error.message : 'Đã đổi mật khẩu ✓'); toast(error ? error.message : 'Đã đổi mật khẩu', error ? 'err' : 'ok'); if (!error) setPw('')
   }
   const field = (k, label) => <label>{label}<input value={f[k] || ''} onChange={e => setF({ ...f, [k]: e.target.value })} /></label>
   const img = preview || stored
