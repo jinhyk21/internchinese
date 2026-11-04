@@ -27,9 +27,11 @@ export default function Content({ table }) {
   const [err, setErr] = useState('')
   const catName = Object.fromEntries(cats.map(c => [c.id, c.name]))
 
-  const build = (useCol, from = (page - 1) * SIZE, to = page * SIZE - 1) => {
+  const build = (useCol, from = (page - 1) * SIZE, to = page * SIZE - 1, full = false) => {
     const needle = q.replace(/[,()%*\\]/g, ' ').trim()
-    let query = supabase.from(table).select('*', { count: 'exact' })
+    const filtered = needle || fCat || fDiff || fFlag
+    // danh sách chỉ lấy cột cần hiển thị; đếm "planned" khi không lọc để khỏi quét cả bảng từ vựng
+    let query = supabase.from(table).select(full ? '*' : T.list, { count: filtered ? 'exact' : 'planned' })
     if (needle) {
       const parts = T.search.map(c => `${c}.ilike.%${needle}%`)
       if (useCol && table !== 'categories') parts.push(`search_text.ilike.%${norm(needle)}%`)   // tìm không dấu
@@ -82,14 +84,16 @@ export default function Content({ table }) {
     if (error) return toast(error.message, 'err')
     toast(msg); setSel(new Set()); load()
   }
-  const dup = async (row) => {
-    const { id, created_at, updated_at, search_text, ...rest } = row
+  const full = async (id) => (await supabase.from(table).select('*').eq('id', id).single()).data
+  const openEdit = async (r) => { const row = await full(r.id); if (row) setEdit({ id: r.id, form: toForm(row) }) }
+  const dup = async (r) => {
+    const { id, created_at, updated_at, search_text, ...rest } = (await full(r.id)) || r
     const { error } = await supabase.from(table).insert({ ...rest, [T.title]: rest[T.title] + ' (bản sao)' })
     if (error) return toast(error.message, 'err'); toast('Đã nhân bản'); load()
   }
 
   const exportCsv = async () => {
-    const { data } = await build(true, 0, 4999)
+    const { data } = await build(true, 0, 4999, true)
     downloadCSV(`${table}.csv`, toCSV(data || [], ['id', ...T.fields.map(f => f[0])]))
     toast(`Đã xuất ${(data || []).length} dòng`)
   }
@@ -177,7 +181,7 @@ export default function Content({ table }) {
                 {hasDiff && <td><Tag kind={{ beginner: 'green', intermediate: 'amber', advanced: 'red' }[r.difficulty]}>{r.difficulty}</Tag></td>}
                 {T.flag && <td>{r[T.flag] ? <Tag kind="green">{table === 'scenarios' ? 'Xuất bản' : 'Hiển thị'}</Tag> : <Tag>Ẩn</Tag>}</td>}
                 <td className="r">
-                  <button className="a-btn ghost sm" onClick={() => setEdit({ id: r.id, form: toForm(r) })}>Sửa</button>{' '}
+                  <button className="a-btn ghost sm" onClick={() => openEdit(r)}>Sửa</button>{' '}
                   {table !== 'vocabulary' && <><button className="a-btn ghost sm" onClick={() => dup(r)}>Nhân bản</button>{' '}</>}
                   <button className="a-btn danger sm" onClick={() => del([r.id])}>Xóa</button>
                 </td>

@@ -26,7 +26,7 @@ export default function Sessions() {
   useEffect(() => { supabase.from('scenarios').select('id,title').order('title').then(r => setScs(r.data || [])) }, [])
 
   const load = async () => {
-    let query = supabase.from('conversation_sessions').select('*', { count: 'exact' })
+    let query = supabase.from('conversation_sessions').select('id,user_id,scenario_id,title,status,communication_mode,duration_seconds,created_at,scenarios(title)', { count: f.q || f.status || f.mode || f.scenario || f.from || f.to ? 'exact' : 'planned' })
     if (f.q.trim()) {
       const needle = f.q.replace(/[,()%*\\]/g, ' ').trim()
       const { data } = await supabase.from('profiles').select('id').or(`full_name.ilike.%${needle}%,student_code.ilike.%${needle}%`).limit(200)
@@ -43,10 +43,10 @@ export default function Sessions() {
       profilesById(ses.map(s => s.user_id)),
       ses.length ? supabase.from('conversation_evaluations').select('session_id,overall_score').in('session_id', ses.map(s => s.id)) : { data: [] },
     ])
-    const sc = Object.fromEntries(scs.map(s => [s.id, s.title])), score = Object.fromEntries((ev.data || []).map(e => [e.session_id, e.overall_score]))
-    setRows(ses.map(s => ({ ...s, user: pm[s.user_id], sc: sc[s.scenario_id], score: score[s.id] }))); setCount(c || 0); setSel(new Set())
+    const score = Object.fromEntries((ev.data || []).map(e => [e.session_id, e.overall_score]))
+    setRows(ses.map(s => ({ ...s, user: pm[s.user_id], sc: s.scenarios?.title, score: score[s.id] }))); setCount(c || 0); setSel(new Set())
   }
-  useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t) }, [page, f, scs.length])
+  useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t) }, [page, f])
 
   const open = async (s) => {
     setDetail({ s, loading: true })

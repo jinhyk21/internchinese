@@ -12,11 +12,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
+      // Chỉ tải 180 ngày gần nhất cho bảng hoạt động (đủ cho kỳ 90 ngày + kỳ so sánh), song song + cache 60s
+      const since = new Date(dayStart(Date.now() - 180 * DAY)).toISOString()
+      const T = 60000
       const [u, s, e, x, sc, ca, voc, bm, uv] = await Promise.all([
-        pageAll('profiles', '*'),
-        pageAll('conversation_sessions', 'id,user_id,scenario_id,created_at,status,duration_seconds,communication_mode'),
-        pageAll('conversation_evaluations', 'user_id,session_id,overall_score,pronunciation_score,grammar_score,vocabulary_score,fluency_score,communication_score,created_at'),
-        pageAll('exam_results', 'user_id,track,score,created_at,duration_seconds'),
+        pageAll('profiles', '*', { ttl: T }),
+        pageAll('conversation_sessions', 'id,user_id,scenario_id,created_at,status,duration_seconds,communication_mode', { since, ttl: T }),
+        pageAll('conversation_evaluations', 'user_id,session_id,overall_score,pronunciation_score,grammar_score,vocabulary_score,fluency_score,communication_score,created_at', { since, ttl: T }),
+        pageAll('exam_results', 'user_id,track,score,created_at,duration_seconds', { since, ttl: T }),
         supabase.from('scenarios').select('id,title,title_zh,difficulty,is_published,category_id'),
         supabase.from('categories').select('id,name'),
         countOf('vocabulary'), countOf('bookmarks'), countOf('user_vocabulary'),
@@ -126,11 +129,11 @@ export default function Dashboard() {
       </div>
 
       <div className="a-grid g2">
-        <Panel title="Bảng xếp hạng học viên" hint="theo số buổi luyện">
+        <Panel title="Bảng xếp hạng học viên" hint="theo số buổi luyện · 180 ngày">
           <div className="a-table"><table><thead><tr><th>#</th><th>Học viên</th><th className="r">Buổi</th><th className="r">Điểm TB</th></tr></thead>
             <tbody>{d.board.map((b, i) => <tr key={b.id}><td>{i + 1}</td><td>{b.name}</td><td className="r">{b.n}</td><td className="r">{b.avg ? <Tag kind={scoreCls(b.avg)}>{Math.round(b.avg)}</Tag> : '—'}</td></tr>)}</tbody></table></div>
         </Panel>
-        <Panel title="Thi thử theo bài" hint="toàn thời gian">
+        <Panel title="Thi thử theo bài" hint="180 ngày gần nhất">
           <div className="a-table"><table><thead><tr><th>Bài thi</th><th className="r">Lượt</th><th className="r">Điểm TB</th></tr></thead>
             <tbody>{d.tracks.map(t => <tr key={t.t}><td>{t.t.startsWith('cat:') ? 'Theo ngành' : t.t}</td><td className="r">{t.n}</td><td className="r"><Tag kind={scoreCls(t.a)}>{Math.round(t.a)}</Tag></td></tr>)}
               {!d.tracks.length && <tr><td colSpan="3" style={{ textAlign: 'center', color: 'var(--mut)' }}>Chưa có lượt thi</td></tr>}</tbody></table></div>

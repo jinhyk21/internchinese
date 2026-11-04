@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../supabase'
 import { Donut, Empty, Head, HBars, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
-import { nameOf, pageAll, profilesById } from './lib.js'
+import { clearCache, nameOf, pageAll, profilesById } from './lib.js'
 import Picker from './Picker.jsx'
 
 const SIZE = 25
@@ -15,18 +15,21 @@ export default function Saved() {
   const [type, setType] = useState('')
   const [edit, setEdit] = useState(null)
 
+  const [vocab, setVocab] = useState({})
+  const [pm, setPm] = useState({})
+
   const load = async () => {
-    const [bm, uv, sc] = await Promise.all([pageAll('bookmarks', '*'), pageAll('user_vocabulary', '*'), supabase.from('scenarios').select('id,title').order('title')])
-    const bms = bm.data.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-    const uvs = uv.data.sort((a, b) => (b.last_reviewed_at || '').localeCompare(a.last_reviewed_at || ''))
-    const vids = [...new Set(bms.map(b => b.vocabulary_id).concat(uvs.map(u => u.vocabulary_id)).filter(Boolean))]
-    const vocab = {}
-    for (let i = 0; i < vids.length; i += 100) {
-      const { data } = await supabase.from('vocabulary').select('id,chinese,vietnamese').in('id', vids.slice(i, i + 100))
-      ;(data || []).forEach(v => { vocab[v.id] = v })
-    }
-    const pm = await profilesById(bms.map(b => b.user_id).concat(uvs.map(u => u.user_id)))
-    setD({ bms, uv: uvs, vocab, pm, scList: sc.data || [], sc: Object.fromEntries((sc.data || []).map(s => [s.id, s.title])) })
+    clearCache()
+    const [bm, uv, sc] = await Promise.all([
+      pageAll('bookmarks', 'id,user_id,item_type,scenario_id,vocabulary_id,created_at'),
+      pageAll('user_vocabulary', 'id,user_id,vocabulary_id,status,review_count,last_reviewed_at'),
+      supabase.from('scenarios').select('id,title').order('title'),
+    ])
+    setD({
+      bms: bm.data.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')),
+      uv: uv.data.sort((a, b) => (b.last_reviewed_at || '').localeCompare(a.last_reviewed_at || '')),
+      scList: sc.data || [], sc: Object.fromEntries((sc.data || []).map(s => [s.id, s.title])),
+    })
   }
   useEffect(() => { load() }, [])
   useEffect(() => setPage(1), [tab, type])
@@ -38,9 +41,22 @@ export default function Saved() {
     return {
       types: Object.entries(cnt(d.bms, b => b.item_type)).map(([k, v]) => ({ label: k === 'scenario' ? 'Tình huống' : 'Từ vựng', value: v })),
       status: Object.entries(cnt(d.uv, u => u.status)).map(([k, v]) => ({ label: STAT[k] || k, value: v })),
-      topUsers: top(cnt(d.uv, u => u.user_id)).map(([id, v]) => ({ label: nameOf(d.pm[id]), value: v })),
+      topUserIds: top(cnt(d.uv, u => u.user_id)),
     }
   }, [d])
+
+  const list = d ? (tab === 'bm' ? d.bms.filter(b => !type || b.item_type === type) : d.uv) : []
+  const view = list.slice((page - 1) * SIZE, page * SIZE)
+  // Chỉ tải tên cho dòng đang hiển thị (trang hiện tại + bảng top) thay vì cả bảng
+  const need = useMemo(() => !s ? { v: [], u: [] } : {
+    v: [...new Set(view.map(r => r.vocabulary_id).filter(Boolean))],
+    u: [...new Set(view.map(r => r.user_id).concat(s.topUserIds.map(x => x[0])).filter(Boolean))],
+  }, [s, tab, type, page, d])
+  useEffect(() => {
+    const miss = need.v.filter(id => !vocab[id])
+    if (miss.length) supabase.from('vocabulary').select('id,chinese,vietnamese').in('id', miss).then(r => setVocab(v => ({ ...v, ...Object.fromEntries((r.data || []).map(x => [x.id, x])) })))
+    profilesById(need.u).then(m => setPm(p => ({ ...p, ...m })))
+  }, [need])
 
   const save = async (e) => {
     e.preventDefault()
@@ -64,8 +80,6 @@ export default function Saved() {
     if (error) return toast(error.message, 'err'); toast('Đã xóa'); load()
   }
   if (!d) return <Loading />
-  const list = tab === 'bm' ? d.bms.filter(b => !type || b.item_type === type) : d.uv
-  const view = list.slice((page - 1) * SIZE, page * SIZE)
   const F = edit?.form
   const setF = (k, v) => setEdit(e => ({ ...e, form: { ...e.form, [k]: v } }))
   const newForm = () => tab === 'bm' ? { user_id: '', item_type: 'vocabulary', scenario_id: '', vocabulary_id: '' } : { user_id: '', vocabulary_id: '', status: 'learning', review_count: 0 }
@@ -78,7 +92,7 @@ export default function Saved() {
       <div className="a-grid g3">
         <Panel title="Loại mục đã lưu"><Donut items={s.types} /></Panel>
         <Panel title="Trạng thái từ vựng"><Donut items={s.status} /></Panel>
-        <Panel title="Học viên học nhiều từ nhất"><HBars items={s.topUsers} unit=" từ" /></Panel>
+        <Panel title="Học viên học nhiều từ nhất"><HBars items={s.topUserIds.map(([id, v]) => ({ label: nameOf(pm[id]), value: v }))} unit=" từ" /></Panel>
       </div>
       <Panel>
         <div className="a-bar">
@@ -89,12 +103,12 @@ export default function Saved() {
           <div className="a-table"><table>
             <thead><tr><th>Học viên</th>{tab === 'bm' ? <><th>Loại</th><th>Mục</th></> : <><th>Từ</th><th>Trạng thái</th><th className="r">Ôn</th></>}<th className="r">Thao tác</th></tr></thead>
             <tbody>{view.map(r => (
-              <tr key={r.id}><td>{nameOf(d.pm[r.user_id])}</td>
+              <tr key={r.id}><td>{nameOf(pm[r.user_id])}</td>
                 {tab === 'bm' ? <>
                   <td><Tag kind={r.item_type === 'scenario' ? 'violet' : 'cyan'}>{r.item_type}</Tag></td>
-                  <td>{r.item_type === 'scenario' ? d.sc[r.scenario_id] : d.vocab[r.vocabulary_id] ? `${d.vocab[r.vocabulary_id].chinese} — ${d.vocab[r.vocabulary_id].vietnamese}` : '—'}</td>
+                  <td>{r.item_type === 'scenario' ? d.sc[r.scenario_id] : vocab[r.vocabulary_id] ? `${vocab[r.vocabulary_id].chinese} — ${vocab[r.vocabulary_id].vietnamese}` : '—'}</td>
                 </> : <>
-                  <td>{d.vocab[r.vocabulary_id] ? `${d.vocab[r.vocabulary_id].chinese} — ${d.vocab[r.vocabulary_id].vietnamese}` : '—'}</td>
+                  <td>{vocab[r.vocabulary_id] ? `${vocab[r.vocabulary_id].chinese} — ${vocab[r.vocabulary_id].vietnamese}` : '—'}</td>
                   <td><Tag kind={{ learning: 'amber', remembered: 'cyan', mastered: 'green' }[r.status]}>{STAT[r.status] || r.status}</Tag></td><td className="r">{r.review_count || 0}</td>
                 </>}
                 <td className="r"><button className="a-btn ghost sm" onClick={() => setEdit({ id: r.id, form: { ...newForm(), ...r } })}>Sửa</button>{' '}

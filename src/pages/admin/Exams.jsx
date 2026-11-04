@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Columns, Empty, Head, Kpi, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
 import Picker from './Picker.jsx'
 import { supabase } from '../../supabase'
-import { avg, downloadCSV, fmtTime, nameOf, pageAll, profilesById, scoreCls, toCSV } from './lib.js'
+import { avg, clearCache, downloadCSV, fmtTime, nameOf, pageAll, profilesById, scoreCls, toCSV } from './lib.js'
 
 const SIZE = 25
 const trackName = (t, cats) => t.startsWith('cat:') ? 'Ngành: ' + (cats[t.slice(4)] || '…') : t
@@ -19,21 +19,34 @@ export default function Exams() {
   const upd = (k, v) => { setF(x => ({ ...x, [k]: v })); setPage(1) }
 
   const load = async () => {
-    const [r, c] = await Promise.all([pageAll('exam_results', '*'), supabase.from('categories').select('id,name')])
-    const rows = r.data.sort((a, b) => b.created_at.localeCompare(a.created_at))
-    setCats(Object.fromEntries((c.data || []).map(x => [x.id, x.name]))); setPm(await profilesById(rows.map(x => x.user_id))); setAll(rows); setSel(new Set())
+    clearCache()
+    const [r, c] = await Promise.all([pageAll('exam_results', 'id,user_id,track,exam_no,score,correct,total,duration_seconds,created_at', { ttl: 30000 }), supabase.from('categories').select('id,name')])
+    setCats(Object.fromEntries((c.data || []).map(x => [x.id, x.name])))
+    setAll(r.data.sort((a, b) => b.created_at.localeCompare(a.created_at))); setSel(new Set())
   }
   useEffect(() => { load() }, [])
 
+  // tìm theo tên: hỏi DB danh sách id khớp (không phải tải hồ sơ của mọi người)
+  const [qIds, setQIds] = useState(null)
+  useEffect(() => {
+    const needle = f.q.replace(/[,()%*\\]/g, ' ').trim()
+    if (!needle) return setQIds(null)
+    const t = setTimeout(async () => {
+      const { data } = await supabase.from('profiles').select('id').or(`full_name.ilike.%${needle}%,student_code.ilike.%${needle}%`).limit(500)
+      setQIds(new Set((data || []).map(x => x.id)))
+    }, 250)
+    return () => clearTimeout(t)
+  }, [f.q])
+
   const rows = useMemo(() => (all || []).filter(r => {
-    if (f.q && !nameOf(pm[r.user_id]).toLowerCase().includes(f.q.toLowerCase())) return false
+    if (qIds && !qIds.has(r.user_id)) return false
     if (f.track && r.track !== f.track) return false
     if (f.min !== '' && r.score < Number(f.min)) return false
     if (f.max !== '' && r.score > Number(f.max)) return false
     if (f.from && new Date(r.created_at) < new Date(f.from)) return false
     if (f.to && new Date(r.created_at) >= new Date(new Date(f.to).getTime() + 86400000)) return false
     return true
-  }), [all, pm, f])
+  }), [all, qIds, f])
   const tracks = useMemo(() => [...new Set((all || []).map(r => r.track))].sort(), [all])
   const hist = useMemo(() => [...Array(10)].map((_, i) => ({ label: `${i * 10}`, value: rows.filter(r => Math.min(9, Math.floor(r.score / 10)) === i).length, color: i < 6 ? 'var(--rd)' : i < 8 ? 'var(--am)' : 'var(--gn)' })), [rows])
 
@@ -54,6 +67,8 @@ export default function Exams() {
   }
   const blank = { user_id: '', track: 'HSK 1', exam_no: 1, score: 0, correct: 0, total: 0, duration_seconds: 0 }
   const setE = (k, v) => setEdit(x => ({ ...x, form: { ...x.form, [k]: v } }))
+  const viewIds = useMemo(() => rows.slice((page - 1) * SIZE, page * SIZE).map(r => r.user_id).join(','), [rows, page])
+  useEffect(() => { if (viewIds) profilesById(viewIds.split(',')).then(m => setPm(p => ({ ...p, ...m }))) }, [viewIds])
   if (!all) return <Loading />
   const view = rows.slice((page - 1) * SIZE, page * SIZE)
   const allOn = view.length && view.every(r => sel.has(r.id))

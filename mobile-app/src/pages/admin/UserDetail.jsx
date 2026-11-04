@@ -25,7 +25,7 @@ export default function UserDetail() {
     if (!prof) return
     const [ses, ev, ex, bm, uv, sc] = await Promise.all([
       supabase.from('conversation_sessions').select('id,scenario_id,status,created_at,duration_seconds,communication_mode').eq('user_id', id).order('created_at', { ascending: false }).limit(200),
-      supabase.from('conversation_evaluations').select('*').eq('user_id', id).limit(500),
+      supabase.from('conversation_evaluations').select('overall_score,pronunciation_score,grammar_score,vocabulary_score,fluency_score,communication_score').eq('user_id', id).limit(500),
       supabase.from('exam_results').select('*').eq('user_id', id).order('created_at', { ascending: false }).limit(200),
       countOf('bookmarks', q => q.eq('user_id', id)), countOf('user_vocabulary', q => q.eq('user_id', id)),
       supabase.from('scenarios').select('id,title'),
