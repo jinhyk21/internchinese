@@ -1,3 +1,4 @@
+import Combo from '../../components/Combo.jsx'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 // ---------- toast
@@ -54,6 +55,11 @@ export const Pager = ({ page, size, count, onChange }) => count > size ? (
     <button disabled={page * size >= count} onClick={() => onChange(page + 1)}>›</button>
   </div>
 ) : null
+export { Combo }
+// Nút chọn nhanh: thấy hết lựa chọn ngay trên một hàng, bấm một lần là lọc
+export const Seg = ({ value, onChange, options }) => (
+  <div className="a-seg">{options.map(([v, l]) => <button key={v} className={String(value) === String(v) ? 'on' : ''} onClick={() => onChange(v)}>{l}</button>)}</div>
+)
 export const Tag = ({ kind = '', children }) => <span className={'a-tag ' + kind}>{children}</span>
 export const Loading = () => <div className="a-loading"><i /><i /><i /></div>
 export const Empty = ({ text = 'Không có dữ liệu' }) => <div className="a-empty">{text}</div>

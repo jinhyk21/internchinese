@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Combo from '../components/Combo.jsx'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
@@ -45,9 +46,7 @@ export default function Exams() {
       </div>
       {industry && (
         <div className="toolbar">
-          <select className="sel" value={track} onChange={e => setTrack(e.target.value)}>
-            {cats.map(c => <option key={c.id} value={'cat:' + c.id}>{c.name_zh} · {c.name}</option>)}
-          </select>
+          <Combo value={track} onChange={setTrack} placeholder="Tìm ngành…" options={cats.map(c => ({ value: 'cat:' + c.id, label: c.name_zh + ' · ' + c.name }))} />
         </div>
       )}
 

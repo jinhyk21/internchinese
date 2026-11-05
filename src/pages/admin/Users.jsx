@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../supabase'
 import { useAuth } from '../../auth.jsx'
-import { Empty, Head, Loading, Pager, Panel, Tag, useToast } from './ui.jsx'
+import { Seg, Empty, Head, Loading, Pager, Panel, Tag, useToast } from './ui.jsx'
 import { downloadCSV, fmtDate, toCSV } from './lib.js'
 
 const SIZE = 25
@@ -51,8 +51,8 @@ export default function Users() {
       <Panel>
         <div className="a-bar">
           <input className="a-in grow" placeholder="Tìm tên, email, mã SV, trường…" value={q} onChange={e => change(setQ)(e.target.value)} />
-          <select className="a-sel" value={role} onChange={e => change(setRole)(e.target.value)}><option value="">Mọi vai trò</option><option value="admin">Admin</option><option value="student">Học viên</option></select>
-          <select className="a-sel" value={status} onChange={e => change(setStatus)(e.target.value)}><option value="">Mọi trạng thái</option><option value="active">Đang hoạt động</option><option value="locked">Đã khóa</option></select>
+          <Seg value={role} onChange={change(setRole)} options={[['', 'Tất cả'], ['admin', 'Admin'], ['student', 'Học viên']]} />
+          <Seg value={status} onChange={change(setStatus)} options={[['', 'Mọi trạng thái'], ['active', 'Hoạt động'], ['locked', 'Đã khóa']]} />
           <select className="a-sel" value={sort} onChange={e => change(setSort)(e.target.value)}><option value="created_at.desc">Mới nhất</option><option value="created_at.asc">Cũ nhất</option><option value="full_name.asc">Tên A→Z</option></select>
         </div>
         {err && <p className="a-msg">{err}</p>}

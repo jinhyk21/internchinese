@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Columns, Empty, Head, Kpi, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
+import { Combo, Columns, Empty, Head, Kpi, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
 import Picker from './Picker.jsx'
 import { supabase } from '../../supabase'
 import { avg, clearCache, downloadCSV, fmtTime, nameOf, pageAll, profilesById, scoreCls, toCSV } from './lib.js'
@@ -89,7 +89,7 @@ export default function Exams() {
       <Panel>
         <div className="a-bar">
           <input className="a-in grow" placeholder="Tìm học viên…" value={f.q} onChange={e => upd('q', e.target.value)} />
-          <select className="a-sel" value={f.track} onChange={e => upd('track', e.target.value)}><option value="">Mọi bài thi</option>{tracks.map(t => <option key={t} value={t}>{trackName(t, cats)}</option>)}</select>
+          <Combo value={f.track} onChange={v => upd('track', v)} allLabel="Mọi bài thi" placeholder="Tìm bài thi…" options={tracks.map(t => ({ value: t, label: trackName(t, cats) }))} />
           <input className="a-in" style={{ width: 90 }} type="number" placeholder="Điểm ≥" value={f.min} onChange={e => upd('min', e.target.value)} />
           <input className="a-in" style={{ width: 90 }} type="number" placeholder="Điểm ≤" value={f.max} onChange={e => upd('max', e.target.value)} />
           <input className="a-in" type="date" value={f.from} onChange={e => upd('from', e.target.value)} />

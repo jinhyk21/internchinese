@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../supabase'
-import { Donut, Empty, Head, HBars, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
+import { Seg, Donut, Empty, Head, HBars, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
 import { clearCache, nameOf, pageAll, profilesById } from './lib.js'
 import Picker from './Picker.jsx'
 
@@ -97,7 +97,7 @@ export default function Saved() {
       <Panel>
         <div className="a-bar">
           <div className="a-seg"><button className={tab === 'bm' ? 'on' : ''} onClick={() => setTab('bm')}>★ Mục đã lưu</button><button className={tab === 'uv' ? 'on' : ''} onClick={() => setTab('uv')}>文 Từ đang học</button></div>
-          {tab === 'bm' && <select className="a-sel" value={type} onChange={e => setType(e.target.value)}><option value="">Tất cả</option><option value="scenario">Tình huống</option><option value="vocabulary">Từ vựng</option></select>}
+          {tab === 'bm' && <Seg value={type} onChange={setType} options={[['', 'Tất cả'], ['scenario', 'Tình huống'], ['vocabulary', 'Từ vựng']]} />}
         </div>
         {!view.length ? <Empty /> : (
           <div className="a-table"><table>

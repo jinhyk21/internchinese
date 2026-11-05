@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { norm } from '../../text.js'
 import { supabase } from '../../supabase'
-import { Empty, Head, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
+import { Combo, Seg, Empty, Head, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
 import { TABLES, downloadCSV, pageAll, parseCSV, toCSV } from './lib.js'
 
 const SIZE = 25
@@ -156,9 +156,9 @@ export default function Content({ table }) {
       <Panel>
         <div className="a-bar">
           <input className="a-in grow" placeholder="Tìm theo tên, nghĩa…" value={q} onChange={e => { setQ(e.target.value); setPage(1) }} />
-          {hasCat && <select className="a-sel" value={fCat} onChange={e => { setFCat(e.target.value); setPage(1) }}><option value="">Mọi ngành</option>{cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>}
-          {hasDiff && <select className="a-sel" value={fDiff} onChange={e => { setFDiff(e.target.value); setPage(1) }}><option value="">Mọi độ khó</option>{DIFF.map(x => <option key={x}>{x}</option>)}</select>}
-          {T.flag && <select className="a-sel" value={fFlag} onChange={e => { setFFlag(e.target.value); setPage(1) }}><option value="">Mọi trạng thái</option><option value="1">{table === 'scenarios' ? 'Đã xuất bản' : 'Đang hiển thị'}</option><option value="0">Đang ẩn</option></select>}
+          {hasCat && <Combo value={fCat} onChange={v => { setFCat(v); setPage(1) }} allLabel="Mọi ngành" placeholder="Tìm ngành…" options={cats.map(c => ({ value: c.id, label: c.name }))} />}
+          {hasDiff && <Seg value={fDiff} onChange={v => { setFDiff(v); setPage(1) }} options={[['', 'Mọi độ khó'], ...DIFF.map(x => [x, x])]} />}
+          {T.flag && <Seg value={fFlag} onChange={v => { setFFlag(v); setPage(1) }} options={[['', 'Tất cả'], ['1', table === 'scenarios' ? 'Đã xuất bản' : 'Đang hiển thị'], ['0', 'Đang ẩn']]} />}
         </div>
         {sel.size > 0 && (
           <div className="a-sel-bar"><b>Đã chọn {sel.size}</b>

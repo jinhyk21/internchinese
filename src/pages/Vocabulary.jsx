@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
 import { useToast } from '../toast.jsx'
+import Combo from '../components/Combo.jsx'
 import Bookmark from '../components/Bookmark.jsx'
 import { Empty, PageHeader, Pager, Skeleton } from '../components/ui.jsx'
 import { HSK_LEVELS, levelStats } from '../hsk.js'
@@ -150,10 +151,7 @@ export default function Vocabulary() {
       <div className="toolbar">
         <input className="search" placeholder="搜索 · Tìm chữ Hán, pinyin hoặc nghĩa…" value={q} onChange={e => setQ(e.target.value)} />
         {level === 'industry' && (
-          <select className="sel" value={cat} onChange={e => { setCat(e.target.value); setPage(1) }}>
-            <option value="all">Tất cả ngành</option>
-            {cats.map(c => <option key={c.id} value={c.id}>{c.name_zh} · {c.name}</option>)}
-          </select>
+          <Combo value={cat} onChange={v => { setCat(v); setPage(1) }} allValue="all" allLabel="Tất cả ngành" placeholder="Tìm ngành…" options={cats.map(c => ({ value: c.id, label: c.name_zh + ' · ' + c.name }))} />
         )}
         <div className="seg2">
           <button className={view === 'card' ? 'on' : ''} onClick={() => setView('card')}>Thẻ</button>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../supabase'
-import { Empty, Head, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
+import { Combo, Seg, Empty, Head, Loading, Modal, Pager, Panel, Tag, useToast } from './ui.jsx'
 import Picker from './Picker.jsx'
 import { downloadCSV, fmtTime, nameOf, profilesById, scoreCls, toCSV } from './lib.js'
 
@@ -110,9 +110,9 @@ export default function Sessions() {
       <Panel>
         <div className="a-bar">
           <input className="a-in grow" placeholder="Tìm theo học viên…" value={f.q} onChange={e => upd('q', e.target.value)} />
-          <select className="a-sel" value={f.scenario} onChange={e => upd('scenario', e.target.value)}><option value="">Mọi tình huống</option>{scs.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select>
-          <select className="a-sel" value={f.status} onChange={e => upd('status', e.target.value)}><option value="">Mọi trạng thái</option>{Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select>
-          <select className="a-sel" value={f.mode} onChange={e => upd('mode', e.target.value)}><option value="">Mọi hình thức</option><option value="text">Văn bản</option><option value="voice">Giọng nói</option></select>
+          <Combo value={f.scenario} onChange={v => upd('scenario', v)} allLabel="Mọi tình huống" placeholder="Tìm tình huống…" options={scs.map(s => ({ value: s.id, label: s.title }))} />
+          <Seg value={f.status} onChange={v => upd('status', v)} options={[['', 'Tất cả'], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])]} />
+          <Seg value={f.mode} onChange={v => upd('mode', v)} options={[['', 'Mọi hình thức'], ['text', 'Văn bản'], ['voice', 'Giọng nói']]} />
           <input className="a-in" type="date" value={f.from} onChange={e => upd('from', e.target.value)} title="Từ ngày" />
           <input className="a-in" type="date" value={f.to} onChange={e => upd('to', e.target.value)} title="Đến ngày" />
         </div>

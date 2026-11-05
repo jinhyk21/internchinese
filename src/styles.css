@@ -486,3 +486,14 @@
 .toast.err .ti { background: var(--red); } .toast.info .ti { background: var(--gold); color: var(--ink); }
 @keyframes toastin { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
 @media (max-width: 699px) { .toasts { right: .75rem; left: .75rem; width: auto; top: auto; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } }
+
+/* ---------- Combo: dropdown có ô tìm kiếm trong danh sách ---------- */
+.cb { position: relative; flex: 0 1 auto; min-width: 200px; max-width: 100%; }
+.cb-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .6rem .8rem; border: 1px solid #cdb98a; border-radius: 4px; background: #fff; font: inherit; color: var(--ink); cursor: pointer; text-align: left; }
+.cb-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .cb-btn i { font-style: normal; color: var(--ink-soft); font-size: .8rem; }
+.cb-btn.set { border-color: var(--red); } .cb-btn:focus-visible { outline: 2px solid var(--gold); }
+.cb-pop { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: min(360px, 92vw); background: #fff; border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 10px 24px rgba(80,50,20,.22); padding: .4rem; }
+.cb-q { margin-bottom: .35rem; }
+.cb-pop ul { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.cb-pop li { padding: .45rem .6rem; border-radius: 4px; cursor: pointer; } .cb-pop li:hover { background: var(--paper-3); } .cb-pop li.on { background: var(--red); color: #fff; } .cb-pop li.none { color: var(--ink-soft); cursor: default; }
+@media (max-width: 699px) { .toolbar .cb { flex: 1 1 100%; } }
