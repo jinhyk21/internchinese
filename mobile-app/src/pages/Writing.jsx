@@ -4,8 +4,9 @@ import WordPicker from '../components/WordPicker.jsx'
 import StrokePractice from '../components/StrokePractice.jsx'
 import VocabWriting from '../components/VocabWriting.jsx'
 import FreeWriting from '../components/FreeWriting.jsx'
+import XingshuWriting from '../components/XingshuWriting.jsx'
 
-const TABS = [['strokes', '笔画', 'Nét cơ bản'], ['guided', '描红', 'Theo từ vựng · có hướng dẫn'], ['free', '默写', 'Tập viết · không hướng dẫn']]
+const TABS = [['strokes', '笔画', 'Nét cơ bản'], ['guided', '描红', 'Theo từ vựng · có hướng dẫn'], ['free', '默写', 'Tập viết · không hướng dẫn'], ['xing', '行书', 'Hành thư · viết liền nét, nhanh']]
 
 export default function Writing() {
   const [tab, setTab] = useState(() => localStorage.getItem('ic_write_tab') || 'strokes')
@@ -25,7 +26,7 @@ export default function Writing() {
       {tab === 'strokes' ? <StrokePractice /> : (
         <div className="wr-cols">
           <WordPicker word={word} onPick={setWord} />
-          {word && (tab === 'guided' ? <VocabWriting key={word.id} word={word} /> : <FreeWriting key={word.id} word={word} />)}
+          {word && (tab === 'guided' ? <VocabWriting key={word.id} word={word} /> : tab === 'xing' ? <XingshuWriting key={word.id} word={word} /> : <FreeWriting key={word.id} word={word} />)}
         </div>
       )}
     </>

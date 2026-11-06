@@ -478,3 +478,13 @@ body { background: #2a1812; }
 .toast.err .ti { background: var(--red); } .toast.info .ti { background: var(--gold); color: var(--ink); }
 @keyframes toastin { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
 @media (max-width: 699px) { .toasts { right: .75rem; left: .75rem; width: auto; top: auto; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } }
+
+/* ---------- Hành thư 行书 ---------- */
+.xs-font { font-family: 'Zhi Mang Xing', 'Ma Shan Zheng', cursive !important; font-weight: 400 !important; }
+.xs-box { width: 170px; } .xs-box .drawbox { width: 170px; }
+.xs-tpl { position: absolute; inset: 0; display: grid; place-items: center; font-size: 8.6rem; line-height: 1; pointer-events: none; z-index: 1; }
+.xs-tpl.strong { color: rgba(35,26,20,.32); } .xs-tpl.soft { color: rgba(35,26,20,.12); }
+.xs-lv { justify-content: center; margin: 0 auto; }
+.xs-tips { background: #fff8e1; border-left: 4px solid var(--gold); padding: .6rem .9rem; font-size: .9rem; line-height: 1.55; }
+.xs-tips ul { margin: .3rem 0 0; padding-left: 1.1rem; }
+@media (max-width: 699px) { .xs-box, .xs-box .drawbox { width: 140px; } .xs-tpl { font-size: 7rem; } }

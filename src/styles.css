@@ -497,3 +497,13 @@
 .cb-pop ul { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
 .cb-pop li { padding: .45rem .6rem; border-radius: 4px; cursor: pointer; } .cb-pop li:hover { background: var(--paper-3); } .cb-pop li.on { background: var(--red); color: #fff; } .cb-pop li.none { color: var(--ink-soft); cursor: default; }
 @media (max-width: 699px) { .toolbar .cb { flex: 1 1 100%; } }
+
+/* ---------- Hành thư 行书 ---------- */
+.xs-font { font-family: 'Zhi Mang Xing', 'Ma Shan Zheng', cursive !important; font-weight: 400 !important; }
+.xs-box { width: 170px; } .xs-box .drawbox { width: 170px; }
+.xs-tpl { position: absolute; inset: 0; display: grid; place-items: center; font-size: 8.6rem; line-height: 1; pointer-events: none; z-index: 1; }
+.xs-tpl.strong { color: rgba(35,26,20,.32); } .xs-tpl.soft { color: rgba(35,26,20,.12); }
+.xs-lv { justify-content: center; margin: 0 auto; }
+.xs-tips { background: #fff8e1; border-left: 4px solid var(--gold); padding: .6rem .9rem; font-size: .9rem; line-height: 1.55; }
+.xs-tips ul { margin: .3rem 0 0; padding-left: 1.1rem; }
+@media (max-width: 699px) { .xs-box, .xs-box .drawbox { width: 140px; } .xs-tpl { font-size: 7rem; } }
