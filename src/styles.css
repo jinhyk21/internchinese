@@ -512,3 +512,5 @@
 .xs-guide .st { fill: var(--jade); opacity: .9; } .xs-guide .no { fill: #fff; font: 700 44px 'Be Vietnam Pro', sans-serif; text-anchor: middle; }
 .xs-guide .dm { fill: none; stroke: var(--red); stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: xsdraw .8s ease forwards; }
 @keyframes xsdraw { 0% { opacity: 1; stroke-dashoffset: 1; } 90% { opacity: 1; } 100% { opacity: .35; stroke-dashoffset: 0; } }
+.xs-res { display: grid; gap: 2px; text-align: left; font-size: .8rem; line-height: 1.4; max-width: 230px; padding: .4rem .6rem; border-radius: 4px; background: #fff; border-left: 4px solid var(--red); }
+.xs-res.ok { border-left-color: var(--jade); } .xs-res.ok b { color: var(--jade); } .xs-res.bad b { color: var(--red); } .xs-res span { color: var(--ink-soft); }
