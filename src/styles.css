@@ -502,8 +502,13 @@
 .xs-font { font-family: 'Zhi Mang Xing', 'Ma Shan Zheng', cursive !important; font-weight: 400 !important; }
 .xs-box { width: 170px; } .xs-box .drawbox { width: 170px; }
 .xs-tpl { position: absolute; inset: 0; display: grid; place-items: center; font-size: 8.6rem; line-height: 1; pointer-events: none; z-index: 1; }
-.xs-tpl.strong { color: rgba(35,26,20,.32); } .xs-tpl.soft { color: rgba(35,26,20,.12); }
+.xs-tpl.strong { color: rgba(35,26,20,.22); } .xs-tpl.soft { color: rgba(35,26,20,.12); }
 .xs-lv { justify-content: center; margin: 0 auto; }
 .xs-tips { background: #fff8e1; border-left: 4px solid var(--gold); padding: .6rem .9rem; font-size: .9rem; line-height: 1.55; }
 .xs-tips ul { margin: .3rem 0 0; padding-left: 1.1rem; }
 @media (max-width: 699px) { .xs-box, .xs-box .drawbox { width: 140px; } .xs-tpl { font-size: 7rem; } }
+.xs-guide { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.xs-guide .rn { fill: none; stroke: rgba(179,32,42,.45); stroke-width: 16; stroke-linecap: round; stroke-linejoin: round; }
+.xs-guide .st { fill: var(--jade); opacity: .9; } .xs-guide .no { fill: #fff; font: 700 44px 'Be Vietnam Pro', sans-serif; text-anchor: middle; }
+.xs-guide .dm { fill: none; stroke: var(--red); stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: xsdraw .8s ease forwards; }
+@keyframes xsdraw { 0% { opacity: 1; stroke-dashoffset: 1; } 90% { opacity: 1; } 100% { opacity: .35; stroke-dashoffset: 0; } }
